@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
+from app import __version__
 from app.main import create_app
 
 TOKEN = "t0ken"
@@ -116,7 +117,7 @@ def test_invalid_numbers_return_400_without_partial_update(tmp_path):
 def test_ping_and_shutdown(tmp_path):
     c, h = make(tmp_path)
     with c:
-        assert c.get("/api/ping").json() == {"app": "ducklive"}
+        assert c.get("/api/ping").json() == {"app": "ducklive", "version": __version__}
         assert c.post("/api/shutdown").status_code == 401
         assert c.post("/api/shutdown", headers=h).status_code == 400  # tanpa server uvicorn
 

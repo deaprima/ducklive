@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Red
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import obs
+from . import __version__, obs
 from .db import DB
 from .engine import OVERLAYS, Engine
 from .paths import data_dir, db_path, resource_dir
@@ -185,7 +185,7 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
     # ------------------------------------------------------- publik (read-only)
     @app.get("/api/ping")
     def ping():
-        return {"app": APP_ID}
+        return {"app": APP_ID, "version": __version__}
 
     @app.get("/api/state")
     def get_state():
@@ -453,7 +453,7 @@ def run():
     app = create_app(lan=lan)
     url = f"http://127.0.0.1:{port}/admin#token={app.state.token}"
     print("=" * 60)
-    print(f" DuckLive berjalan di http://127.0.0.1:{port}")
+    print(f" DuckLive {__version__} berjalan di http://127.0.0.1:{port}")
     print(f" Admin : {url}")
     for name in OVERLAYS:
         print(f" OBS   : http://127.0.0.1:{port}/overlay/{name}")

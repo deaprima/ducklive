@@ -1334,6 +1334,7 @@
           <li>Tab ini tertutup? Klik lagi ikon <b>DuckLive</b> di Desktop atau Start Menu.</li>
         </ol>
         <p class="hint" style="margin-top: 14px" id="dataDir"></p>
+        <p class="hint" id="appVersion"></p>
       </section>
     </main>
     <div id="toast" role="status"></div>
@@ -2401,6 +2402,10 @@
       })();
       showTab(localStorage.getItem("ducklive_tab") || "bantuan"); // kunjungan pertama langsung ke panduan
       Sub.start();
+      fetch("/api/ping")
+        .then((r) => r.json())
+        .then((p) => ($("appVersion").textContent = `DuckLive versi ${p.version}`))
+        .catch(() => {});
       loadSettings()
         .then(() => {
           obsWarning();

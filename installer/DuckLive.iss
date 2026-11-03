@@ -1,10 +1,13 @@
-; Installer Windows untuk DuckLive (Inno Setup 6). Dibangun lewat: python tools/build.py <versi>
+; Installer Windows untuk DuckLive (Inno Setup 6+). Dibangun lewat: python tools/build.py
 ; - Tanpa hak Administrator (dipasang per user di %LOCALAPPDATA%\Programs)
 ; - Shortcut Desktop + Start Menu, langsung dijalankan setelah selesai
 ; - Upgrade: aplikasi lama ditutup otomatis; data user (timer, goal, token) tidak tersentuh
 
 #ifndef AppVersion
   #define AppVersion "0.0.0"
+#endif
+#ifndef AppVersionNumeric
+  #define AppVersionNumeric "0.0.0.0"
 #endif
 #define AppName "DuckLive"
 #define AppExe "DuckLive.exe"
@@ -15,6 +18,13 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppName}
+VersionInfoVersion={#AppVersionNumeric}
+VersionInfoProductVersion={#AppVersionNumeric}
+VersionInfoTextVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion}
+VersionInfoProductName={#AppName}
+VersionInfoDescription={#AppName} Setup
+VersionInfoCopyright=MIT License
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes

@@ -1,10 +1,13 @@
 [project]
 name = "ducklive"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Timer & milestone subathon untuk live YouTube, dengan overlay OBS."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.10"
+
+[tool.setuptools.dynamic]
+version = { attr = "app.__version__" }
 
 [tool.ruff]
 line-length = 120
