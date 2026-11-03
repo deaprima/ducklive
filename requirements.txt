@@ -1,0 +1,7 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+httpx>=0.27
+# Dikunci: app/sources/ytchat.py memakai fungsi internal versi ini.
+chat-downloader==0.2.8
+google-auth-oauthlib>=1.2
+websockets>=13

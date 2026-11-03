@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Alerts</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      body {
+        display: flex;
+        align-items: flex-start;
+        justify-content: var(--justify, center);
+        padding: 20px;
+      }
+      .alert {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-width: 420px;
+        max-width: 720px;
+        border-width: 3px;
+        animation: in 0.35s ease-out;
+      }
+      .alert.out {
+        animation: out 0.35s ease-in forwards;
+      }
+      /* tile maskot seperti di brand board: happy di atas green-soft, celebrate di atas putih */
+      .tile {
+        flex: none;
+        padding: 6px;
+        border: var(--stroke) solid var(--ink);
+        border-radius: var(--radius-sm);
+        background: var(--green-soft);
+      }
+      .goal .tile {
+        background: var(--white);
+      }
+      .tile .mascot {
+        width: 88px;
+        height: 88px;
+      }
+      .alert.goal {
+        background: var(--orange-soft);
+        color: var(--ink);
+      }
+      .a1 {
+        font-size: 30px;
+        font-weight: 800;
+        line-height: 1.2;
+      }
+      .a2 {
+        font-size: 22px;
+        color: var(--accent);
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .goal .a1 {
+        font-size: 36px;
+      }
+      .goal .a2 {
+        color: var(--muted-c);
+      }
+      @keyframes in {
+        from {
+          transform: translateY(-30px) scale(0.96);
+          opacity: 0;
+        }
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+      @keyframes out {
+        to {
+          transform: translateY(-30px);
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body data-overlay="alerts">
+    <div id="stage"></div>
+    <script src="/static/common.js"></script>
+    <script>
+      const stage = document.getElementById("stage");
+      const queue = [];
+      let busy = false;
+      let ctx = null; // satu AudioContext untuk semua alert (membuat baru tiap alert bocor di siaran panjang)
+      function beep(freqs) {
+        if (!(Sub.state && Sub.state.settings.sound)) return;
+        try {
+          ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+          if (ctx.state === "suspended") ctx.resume();
+          freqs.forEach((f, i) => {
+            const o = ctx.createOscillator(),
+              g = ctx.createGain();
+            o.frequency.value = f;
+            o.connect(g);
+            g.connect(ctx.destination);
+            const t = ctx.currentTime + i * 0.14;
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.13);
+            o.start(t);
+            o.stop(t + 0.14);
+          });
+        } catch (e) {
+          /* audio tidak tersedia */
+        }
+      }
+      function minutes(sec) {
+        const m = Math.round(sec / 6) / 10;
+        return m % 1 === 0 ? m.toFixed(0) : String(m);
+      }
+      function describe(m) {
+        if (m.type === "goal")
+          return {
+            cls: "goal",
+            face: "celebrate",
+            l1: "GOAL TERCAPAI!",
+            l2: `${m.text}` + (m.bonus_seconds ? ` · +${minutes(m.bonus_seconds)} menit bonus` : ""),
+            tones: [523, 659, 784, 1047],
+          };
+        const who = m.author || "Seseorang";
+        const add = m.seconds_added > 0 ? `+${minutes(m.seconds_added)} menit` : "";
+        if (m.kind === "gift")
+          return { face: "happy", l1: `${who} gift ${m.units} member!`, l2: add, tones: [660, 880] };
+        if (m.kind === "superchat")
+          return { face: "happy", l1: `${who} kirim Super Chat!`, l2: add, tones: [740, 988] };
+        return { face: "happy", l1: `${who} jadi member baru!`, l2: add, tones: [660, 880] };
+      }
+      function next() {
+        if (busy || !queue.length) return;
+        busy = true;
+        const d = queue.shift();
+        const card = Sub.el("div", "card alert " + (d.cls || ""));
+        if (Sub.state && Sub.state.settings.mascot !== false) {
+          const img = Sub.el("img", "mascot bump");
+          img.alt = "";
+          img.width = img.height = 88;
+          img.src = Sub.faceUrl(d.face);
+          const tile = Sub.el("div", "tile");
+          tile.append(img);
+          card.append(tile);
+        }
+        const text = Sub.el("div");
+        text.append(Sub.el("div", "a1", d.l1));
+        if (d.l2) text.append(Sub.el("div", "a2", d.l2));
+        card.append(text);
+        stage.replaceChildren(card);
+        beep(d.tones);
+        setTimeout(
+          () => {
+            card.classList.add("out");
+            setTimeout(() => {
+              stage.replaceChildren();
+              busy = false;
+              next();
+            }, 380);
+          },
+          d.cls === "goal" ? 6000 : 3500,
+        );
+      }
+      function push(m) {
+        if (queue.length < 30) queue.push(describe(m));
+        next();
+      }
+      Sub.on("event", (m) => {
+        if (m.kind !== "manual") push(m);
+      });
+      Sub.on("goal", push);
+      Sub.start();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Timer</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      body {
+        padding: 16px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: var(--justify, center);
+        gap: 14px;
+      }
+      .top .mascot {
+        width: 108px;
+        height: 108px;
+      }
+      .timer {
+        display: flex;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .unit {
+        text-align: center;
+      }
+      .digits {
+        font-size: 76px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 1px;
+        font-variant-numeric: tabular-nums;
+      }
+      .lbl {
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        margin-top: 4px;
+        color: var(--fg);
+      }
+      .sep {
+        font-size: 76px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .status {
+        display: flex;
+        justify-content: var(--justify, center);
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        letter-spacing: 2px;
+        margin-top: 4px;
+        color: var(--accent);
+        min-height: 24px;
+      }
+      .badge {
+        background: var(--accent);
+        color: var(--ink);
+        border: var(--stroke) solid var(--ink);
+        font-weight: 800;
+        padding: 0 10px;
+        border-radius: 10px;
+        font-size: 16px;
+        letter-spacing: 0;
+        text-shadow: none;
+      }
+    </style>
+  </head>
+  <body data-overlay="timer">
+    <div class="top">
+      <img class="mascot" id="duck" alt="" width="108" height="108" src="/static/brand/mascot-sleepy.svg" />
+      <div class="timer shadow">
+        <div class="unit">
+          <div class="digits" id="h">00</div>
+          <div class="lbl">HOURS</div>
+        </div>
+        <div class="sep">:</div>
+        <div class="unit">
+          <div class="digits" id="m">00</div>
+          <div class="lbl">MINUTES</div>
+        </div>
+        <div class="sep">:</div>
+        <div class="unit">
+          <div class="digits" id="s">00</div>
+          <div class="lbl">SECONDS</div>
+        </div>
+      </div>
+    </div>
+    <div class="status shadow">
+      <span id="status"></span>
+      <span class="badge hidden" id="mult"></span>
+    </div>
+    <script src="/static/common.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const labels = { idle: "SIAP", paused: "JEDA", ended: "SELESAI", running: "" };
+      const duck = Sub.mascot($("duck"));
+      Sub.on("state", (st) => {
+        $("status").textContent = labels[st.status] || "";
+        $("duck").classList.toggle("hidden", st.settings.mascot === false);
+        duck.status(st.status);
+        const m = st.multiplier;
+        $("mult").classList.toggle("hidden", m.value === 1);
+        $("mult").textContent = "x" + m.value;
+      });
+      Sub.on("event", (m) => {
+        if (m.kind !== "manual") duck.flash("happy", 4000);
+      });
+      Sub.on("goal", () => duck.flash("celebrate", 7000));
+      function tick() {
+        const [h, m, s] = Sub.hms(Sub.remaining());
+        $("h").textContent = Sub.pad(h);
+        $("m").textContent = Sub.pad(m);
+        $("s").textContent = Sub.pad(s);
+        requestAnimationFrame(tick);
+      }
+      tick();
+      Sub.start();
+    </script>
+  </body>
+</html>

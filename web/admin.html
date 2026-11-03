@@ -1,0 +1,2414 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DuckLive – Admin</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <script>
+      // Terapkan tema admin sebelum halaman digambar (tanpa kedip). Default mengikuti sistem.
+      (function () {
+        var t = localStorage.getItem("ducklive_ui_theme");
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.ui = t;
+      })();
+    </script>
+    <style>
+      /* Tema halaman Admin (terpisah dari tema overlay di OBS). Warna dari brand DuckLive. */
+      :root[data-ui="light"] {
+        --bg: var(--paper);
+        --surface: var(--white);
+        --surface-2: #fbf5e8;
+        --text: var(--ink);
+        --text-2: var(--muted-c);
+        --border: var(--line);
+        --border-strong: var(--ink);
+        --btn-shadow: var(--ink);
+        --field: var(--white);
+        --duck-bg: var(--orange-soft);
+        --word-live: var(--green);
+        --toast-bg: var(--ink);
+        --toast-fg: var(--white);
+        --ok-bg: var(--green-soft);
+        --warn-bg: var(--orange-soft);
+        --err-bg: #fbe1d8;
+        --hover: #f6eedc;
+      }
+      :root[data-ui="dark"] {
+        color-scheme: dark;
+        --bg: #12110f;
+        --surface: var(--ink);
+        --surface-2: #25221e;
+        --text: var(--paper);
+        --text-2: #b8b0a1;
+        --border: #36322c;
+        --border-strong: #5c564c;
+        --btn-shadow: #000;
+        --field: #15130f;
+        --duck-bg: var(--paper);
+        --word-live: var(--orange);
+        --toast-bg: var(--paper);
+        --toast-fg: var(--ink);
+        --ok-bg: #1f3a2a;
+        --warn-bg: #3d2f16;
+        --err-bg: #43211a;
+        --hover: #2f2b26;
+      }
+
+      html,
+      body {
+        overflow: auto;
+        background: var(--bg);
+        color: var(--text);
+      }
+      body {
+        font: 15px/1.5 var(--font);
+        margin: 0;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 20px 64px;
+      }
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 4px;
+      }
+      h3 {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 0 2px;
+      }
+      p {
+        margin: 0;
+      }
+      .hint {
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .panel {
+        background: var(--surface);
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: var(--radius);
+        padding: 20px 22px;
+        margin-bottom: 16px;
+      }
+      .panel-head {
+        margin-bottom: 16px;
+      }
+
+      /* Tombol & isian */
+      button {
+        font: 600 14px/1.2 var(--font);
+        padding: 9px 14px;
+        border-radius: 12px;
+        border: var(--stroke) solid var(--border-strong);
+        cursor: pointer;
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 2px 2px 0 var(--btn-shadow);
+        transition:
+          transform 0.06s,
+          box-shadow 0.06s;
+        white-space: nowrap;
+      }
+      button:hover {
+        background: var(--surface-2);
+      }
+      button:active {
+        transform: translate(2px, 2px);
+        box-shadow: none;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      textarea:focus-visible {
+        outline: 3px solid var(--orange);
+        outline-offset: 2px;
+      }
+      button.pri {
+        background: var(--orange);
+        color: var(--ink);
+        border-color: var(--ink);
+      }
+      button.pri:hover {
+        background: #f7b95c;
+      }
+      button.danger {
+        color: var(--red);
+      }
+      button.lg {
+        font-size: 16px;
+        padding: 12px 22px;
+      }
+      button.flat {
+        box-shadow: none;
+      }
+      button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+      }
+      input,
+      textarea {
+        font: 15px var(--font);
+        color: var(--text);
+        background: var(--field);
+        border: var(--stroke) solid var(--border);
+        border-radius: 12px;
+        padding: 9px 11px;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: var(--border-strong);
+      }
+      input[type="text"],
+      input[type="number"],
+      input[type="password"] {
+        width: 100%;
+        min-width: 0;
+      }
+      input[type="checkbox"],
+      input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--green);
+        flex: none;
+      }
+      input[type="color"] {
+        padding: 3px;
+        width: 64px;
+        height: 42px;
+        cursor: pointer;
+      }
+      input[type="range"] {
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        accent-color: var(--orange);
+        height: 28px;
+        cursor: pointer;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+
+      /* Dropdown buatan sendiri (daftar pilihan <select> bawaan tidak bisa diberi gaya) */
+      .dd {
+        position: relative;
+        min-width: 0;
+      }
+      .dd-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        text-align: left;
+        font-weight: 500;
+        font-size: 15px;
+        background: var(--field);
+        border: var(--stroke) solid var(--border);
+        box-shadow: none;
+        padding: 9px 12px;
+      }
+      .dd-btn:hover {
+        background: var(--field);
+        border-color: var(--border-strong);
+      }
+      .dd-btn > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .dd-btn:active {
+        transform: none;
+      }
+      .dd-btn::after {
+        content: "";
+        flex: none;
+        width: 7px;
+        height: 7px;
+        margin: -4px 2px 0;
+        border: solid var(--text-2);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+        transition: transform 0.15s;
+      }
+      .dd.open .dd-btn {
+        border-color: var(--border-strong);
+      }
+      .dd.open .dd-btn::after {
+        transform: rotate(-135deg);
+        margin-top: 4px;
+      }
+      .dd-list {
+        position: absolute;
+        z-index: 30;
+        left: 0;
+        top: calc(100% + 6px);
+        min-width: 100%;
+        margin: 0;
+        padding: 5px;
+        list-style: none;
+        background: var(--surface);
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: 12px;
+        box-shadow: 3px 3px 0 var(--btn-shadow);
+      }
+      .dd-list.up {
+        top: auto;
+        bottom: calc(100% + 6px);
+      }
+      .dd-opt {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        white-space: nowrap;
+      }
+      .dd-opt:hover,
+      .dd-opt.active {
+        background: var(--hover);
+      }
+      .dd-opt[aria-selected="true"] {
+        font-weight: 700;
+      }
+      .dd-opt[aria-selected="true"]::after {
+        content: "";
+        width: 5px;
+        height: 10px;
+        margin: -3px 3px 0 0;
+        border: solid var(--green);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+
+      /* Header */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: var(--bg);
+        border-bottom: var(--stroke) solid var(--border);
+        margin-bottom: 20px;
+      }
+      .topbar-in {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        margin: 0;
+      }
+      .brand img {
+        width: 42px;
+        height: 42px;
+      }
+      .wordmark {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+      .wordmark span {
+        color: var(--word-live);
+      }
+      .seg {
+        display: inline-flex;
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: 12px;
+        overflow: hidden;
+        flex-wrap: nowrap;
+      }
+      .seg button {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 8px 14px;
+        background: transparent;
+      }
+      .seg button + button {
+        border-left: var(--stroke) solid var(--border-strong);
+      }
+      .seg button[aria-pressed="true"] {
+        background: var(--text);
+        color: var(--bg);
+      }
+      .seg.sm button {
+        padding: 6px 11px;
+        font-size: 13px;
+      }
+
+      /* Panel timer */
+      .hero {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+      .duck-wrap {
+        background: var(--duck-bg);
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: 18px;
+        padding: 6px;
+        flex: none;
+      }
+      .duck-wrap .mascot {
+        width: 80px;
+        height: 80px;
+      }
+      .big {
+        font-size: 60px;
+        font-weight: 800;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -1px;
+      }
+      .badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 12px;
+        border-radius: 99px;
+        background: var(--surface-2);
+        border: var(--stroke) solid var(--border);
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .badge[data-s="running"] {
+        background: var(--ok-bg);
+        border-color: var(--green);
+      }
+      .badge[data-s="paused"],
+      .badge[data-s="idle"] {
+        background: var(--warn-bg);
+        border-color: var(--orange);
+      }
+      .badge[data-s="ended"] {
+        background: var(--text);
+        color: var(--bg);
+        border-color: var(--text);
+      }
+      #mult {
+        background: var(--orange);
+        color: var(--ink);
+        border-color: var(--ink);
+      }
+      .hero-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .tools {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+        margin-top: 20px;
+      }
+      .tool {
+        background: var(--surface-2);
+        border: var(--stroke) solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .tool .row {
+        flex-wrap: nowrap;
+      }
+      .tool .row input[type="number"] {
+        width: 68px;
+      }
+      .tool > p.hint {
+        margin-top: auto;
+      }
+      .reset-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+        padding-top: 14px;
+        border-top: var(--stroke) dashed var(--border);
+        flex-wrap: wrap;
+      }
+
+      /* Tab */
+      .tabs {
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+        margin: 4px 0 12px;
+      }
+      .tabs button {
+        box-shadow: none;
+        border-color: transparent;
+        background: transparent;
+        color: var(--text-2);
+      }
+      .tabs button:hover {
+        color: var(--text);
+        background: var(--surface-2);
+      }
+      .tabs button[aria-selected="true"] {
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--border-strong);
+      }
+
+      /* Formulir pengaturan */
+      .group {
+        border-top: var(--stroke) solid var(--border);
+        padding: 18px 0 4px;
+      }
+      .group:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+      .group > .hint {
+        margin-bottom: 14px;
+      }
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 14px 16px;
+      }
+      .narrow .fields {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+      .field label.lbl {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+      .field label.lbl output {
+        margin-left: auto;
+        color: var(--text-2);
+        font-weight: 600;
+      }
+      .field .hint {
+        margin-top: 4px;
+      }
+      .suffix {
+        display: flex;
+        align-items: stretch;
+      }
+      .suffix input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      .suffix span {
+        display: grid;
+        place-items: center;
+        padding: 0 12px;
+        border: var(--stroke) solid var(--border);
+        border-left: 0;
+        border-radius: 0 12px 12px 0;
+        background: var(--surface-2);
+        color: var(--text-2);
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .check {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .check .hint {
+        font-weight: 400;
+      }
+      .savebar {
+        position: sticky;
+        bottom: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin: 18px -22px -20px;
+        padding: 14px 22px;
+        background: var(--surface);
+        border-top: var(--stroke) solid var(--border);
+        border-radius: 0 0 var(--radius) var(--radius);
+      }
+      .dirty {
+        color: var(--orange);
+        font-weight: 600;
+        font-size: 13px;
+      }
+      details.adv > summary {
+        cursor: pointer;
+        font-weight: 700;
+        list-style: none;
+        padding: 4px 0;
+      }
+      details.adv > summary::-webkit-details-marker {
+        display: none;
+      }
+      details.adv > summary::before {
+        content: "+";
+        display: inline-block;
+        width: 18px;
+        font-weight: 800;
+      }
+      details.adv[open] > summary::before {
+        content: "−";
+      }
+
+      /* Tampilan overlay: formulir + preview */
+      .style-wrap {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+        gap: 24px;
+        align-items: start;
+      }
+      .preview {
+        position: sticky;
+        top: 86px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .pv-stage {
+        position: relative;
+        overflow: hidden;
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: var(--radius-sm);
+      }
+      .pv-stage[data-bg="dark"] {
+        background: linear-gradient(135deg, #2c3e50, #3a4a5a 45%, #1f2a33);
+      }
+      .pv-stage[data-bg="light"] {
+        background: linear-gradient(135deg, #e8eef3, #cfd9e2);
+      }
+      .pv-stage[data-bg="checker"] {
+        background: repeating-conic-gradient(#c9c9c9 0 25%, #f1f1f1 0 50%) 0 0 / 20px 20px;
+      }
+      /* color-scheme harus sama dengan halaman overlay, kalau tidak Chrome memberi latar putih pada iframe */
+      .pv-stage iframe {
+        position: absolute;
+        left: 0;
+        top: 0;
+        border: 0;
+        transform-origin: 0 0;
+        background: transparent;
+        color-scheme: normal;
+      }
+      .pv-size {
+        font-size: 12px;
+        color: var(--text-2);
+      }
+      .target {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        padding-bottom: 16px;
+        border-bottom: var(--stroke) solid var(--border);
+      }
+      .target .seg {
+        flex-wrap: wrap;
+      }
+      .tag {
+        margin-left: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 6px;
+        background: var(--orange);
+        color: var(--ink);
+      }
+      .custom-row {
+        background: var(--surface-2);
+        border: var(--stroke) solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        margin-bottom: 16px;
+      }
+      .group.locked {
+        opacity: 0.45;
+      }
+      .pv-warn {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        background: var(--orange-soft);
+        border: var(--stroke) solid var(--orange);
+        border-radius: 10px;
+        padding: 8px 12px;
+      }
+      @media (max-width: 900px) {
+        .style-wrap {
+          grid-template-columns: 1fr;
+        }
+        .preview {
+          position: static;
+          order: -1;
+        }
+      }
+
+      /* Sumber live */
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .choice {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 12px 14px;
+        border: var(--stroke) solid var(--border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        background: var(--surface);
+      }
+      .choice:has(input:checked) {
+        border-color: var(--border-strong);
+        background: var(--surface-2);
+      }
+      .choice b {
+        display: block;
+        font-size: 14px;
+      }
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        margin-top: 14px;
+      }
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--border-strong);
+        flex: none;
+      }
+      .dot[data-state="ok"] {
+        background: var(--green);
+      }
+      .dot[data-state="retry"] {
+        background: var(--orange);
+      }
+      .dot[data-state="error"] {
+        background: var(--red);
+      }
+      .note {
+        border: var(--stroke) solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 14px;
+        margin-top: 10px;
+        font-size: 14px;
+      }
+      .note.err {
+        background: var(--err-bg);
+        border-color: var(--red);
+      }
+      .note.ok {
+        background: var(--ok-bg);
+        border-color: var(--green);
+      }
+      .note.warn {
+        background: var(--warn-bg);
+        border-color: var(--orange);
+      }
+      .scene-cell {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .scene-cell .dd,
+      .scene-cell input {
+        width: 190px;
+      }
+      .subpanel {
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: var(--stroke) solid var(--border);
+      }
+
+      /* Tabel */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      td,
+      th {
+        border-bottom: var(--stroke) solid var(--border);
+        padding: 9px 6px;
+        text-align: left;
+        font-size: 14px;
+        vertical-align: middle;
+      }
+      th {
+        font-weight: 600;
+        color: var(--text-2);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      td input[type="number"] {
+        width: 90px;
+      }
+      td .dd {
+        width: 200px;
+      }
+      .undone {
+        opacity: 0.45;
+        text-decoration: line-through;
+      }
+      .empty {
+        color: var(--text-2);
+        text-align: center;
+        padding: 18px;
+      }
+      .add-goal {
+        display: grid;
+        grid-template-columns: 120px 1fr 130px 170px auto;
+        gap: 10px;
+        align-items: end;
+        margin-bottom: 18px;
+      }
+      @media (max-width: 760px) {
+        .add-goal {
+          grid-template-columns: 1fr 1fr;
+        }
+        .hero-actions {
+          margin-left: 0;
+        }
+      }
+
+      /* Overlay */
+      .ov {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 4px 12px;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: var(--stroke) solid var(--border);
+      }
+      .ov:last-child {
+        border-bottom: 0;
+      }
+      .ov code {
+        font:
+          13px ui-monospace,
+          monospace;
+        color: var(--text-2);
+        overflow-wrap: anywhere;
+      }
+      ol.steps {
+        margin: 8px 0 0;
+        padding-left: 22px;
+      }
+      ol.steps li {
+        margin: 6px 0;
+      }
+      textarea {
+        width: 100%;
+        min-height: 110px;
+        font:
+          13px ui-monospace,
+          monospace;
+      }
+      #toast {
+        position: fixed;
+        right: 16px;
+        bottom: 16px;
+        z-index: 50;
+        background: var(--toast-bg);
+        color: var(--toast-fg);
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: var(--radius-sm);
+        display: none;
+        max-width: 80vw;
+        box-shadow: 3px 3px 0 var(--orange);
+      }
+      /* Dialog konfirmasi / input (pengganti confirm() dan prompt() bawaan browser) */
+      dialog.modal {
+        width: min(460px, calc(100vw - 32px));
+        padding: 22px 24px;
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: var(--radius);
+        background: var(--surface);
+        color: var(--text);
+        box-shadow: 4px 4px 0 var(--btn-shadow);
+      }
+      dialog.modal[open] {
+        animation: modal-in 0.16s ease-out;
+      }
+      dialog.modal::backdrop {
+        background: rgba(18, 17, 15, 0.55);
+      }
+      @keyframes modal-in {
+        from {
+          transform: translateY(8px) scale(0.98);
+          opacity: 0;
+        }
+      }
+      .modal-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .modal-head img {
+        flex: none;
+        width: 60px;
+        height: 60px;
+        padding: 4px;
+        border: var(--stroke) solid var(--border-strong);
+        border-radius: var(--radius-sm);
+        background: var(--duck-bg);
+      }
+      .modal-head h2 {
+        font-size: 19px;
+      }
+      .modal-msg {
+        margin-top: 12px;
+        color: var(--text-2);
+        white-space: pre-line;
+      }
+      .modal input {
+        width: 100%;
+        margin-top: 14px;
+      }
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 22px;
+      }
+      button.solid-danger {
+        background: var(--red);
+        color: var(--white);
+        border-color: var(--ink);
+      }
+      button.solid-danger:hover {
+        background: #ec6a44;
+      }
+
+      /* Layar setelah aplikasi dimatikan */
+      .off {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .off .duck-wrap {
+        display: inline-block;
+        margin-bottom: 18px;
+      }
+      .off .mascot {
+        width: 120px;
+        height: 120px;
+      }
+      .off h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 800;
+      }
+      .off p {
+        max-width: 420px;
+        margin: 6px auto 0;
+        color: var(--text-2);
+      }
+    </style>
+  </head>
+  <body data-admin>
+    <header class="topbar">
+      <div class="topbar-in">
+        <h1 class="brand">
+          <img id="logo" src="/static/brand/logo-mark.svg" alt="" width="42" height="42" />
+          <span class="wordmark">Duck<span>Live</span></span>
+        </h1>
+        <div class="seg" role="group" aria-label="Tema halaman admin">
+          <button type="button" data-ui-set="light">Terang</button>
+          <button type="button" data-ui-set="dark">Gelap</button>
+        </div>
+        <button id="bData" class="flat" title="Folder berisi database, token, client_secret.json, dan log">
+          Folder data
+        </button>
+        <button id="bQuit" class="danger flat" title="Overlay di OBS akan berhenti update sampai aplikasi dibuka lagi">
+          Matikan aplikasi
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <!-- ================================================================ TIMER -->
+      <section class="panel" aria-label="Timer">
+        <div class="hero">
+          <div class="duck-wrap">
+            <img class="mascot" id="duck" alt="" width="80" height="80" src="/static/brand/mascot-sleepy.svg" />
+          </div>
+          <div>
+            <div class="big" id="clock">00:00:00</div>
+            <div class="badges">
+              <span class="badge" id="status">-</span>
+              <span class="badge">
+                Total
+                <b id="counter">0</b>
+              </span>
+              <span class="badge" id="mult" hidden></span>
+            </div>
+          </div>
+          <div class="hero-actions">
+            <button class="pri lg" id="bStart">Mulai</button>
+            <button class="lg" id="bPause">Jeda</button>
+          </div>
+        </div>
+        <div class="tools">
+          <div class="tool">
+            <h3>Tambah / kurangi waktu</h3>
+            <div class="row">
+              <input type="number" id="adj" value="5" step="any" aria-label="Menit" />
+              <span class="hint">menit</span>
+            </div>
+            <div class="row">
+              <button id="bAdd">Tambah</button>
+              <button id="bSub">Kurangi</button>
+            </div>
+            <p class="hint">Hanya mengubah timer, tidak mengubah total member.</p>
+          </div>
+          <div class="tool">
+            <h3>Multiplier sementara</h3>
+            <div class="row">
+              <span class="hint">x</span>
+              <input type="number" id="mVal" value="2" min="1" step="any" aria-label="Kelipatan" />
+              <span class="hint">selama</span>
+              <input type="number" id="mMin" value="60" min="1" aria-label="Durasi menit" />
+              <span class="hint">menit</span>
+            </div>
+            <div class="row">
+              <button id="bMult">Aktifkan</button>
+              <button id="bMultOff">Matikan</button>
+            </div>
+            <p class="hint">Contoh x2: setiap member menambah waktu dua kali lipat.</p>
+          </div>
+          <div class="tool">
+            <h3>Koreksi total</h3>
+            <div class="row">
+              <input
+                type="number"
+                id="cVal"
+                min="0"
+                placeholder="Total baru"
+                aria-label="Total baru"
+                style="width: 130px"
+              />
+            </div>
+            <div class="row"><button id="bCounter">Simpan</button></div>
+            <p class="hint">Ganti jumlah member/gift (mis. setelah aplikasi sempat mati). Tidak menambah waktu.</p>
+          </div>
+        </div>
+        <div class="reset-row">
+          <button id="bReset" class="danger">Reset semua</button>
+          <span class="hint">Kembali ke waktu awal, total jadi 0, riwayat event dihapus. Daftar goal tetap ada.</span>
+        </div>
+      </section>
+
+      <!-- ================================================================ TAB -->
+      <nav class="tabs" role="tablist" aria-label="Bagian admin">
+        <button role="tab" data-tab="goal">Goal</button>
+        <button role="tab" data-tab="sumber">Sumber live</button>
+        <button role="tab" data-tab="pengaturan">Aturan</button>
+        <button role="tab" data-tab="tampilan">Tampilan overlay</button>
+        <button role="tab" data-tab="overlay">Pasang di OBS</button>
+        <button role="tab" data-tab="riwayat">Tes &amp; riwayat</button>
+        <button role="tab" data-tab="bantuan">Bantuan</button>
+      </nav>
+
+      <!-- Goal -->
+      <section class="panel tab" id="tab-goal" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Goal</h2>
+          <p class="hint">
+            Goal tercentang otomatis saat total mencapai target. Overlay Milestone menampilkan goal berikutnya yang
+            belum tercapai. Scene OBS (opsional): OBS pindah ke scene itu saat goal tercapai.
+          </p>
+          <div class="note warn row" id="obsWarn" hidden>
+            <span id="obsWarnText" class="grow"></span>
+            <button class="flat" id="bObsOpen">Buka pengaturan OBS</button>
+          </div>
+        </div>
+        <div class="add-goal">
+          <div class="field">
+            <label class="lbl" for="gTarget">Target</label>
+            <input type="number" id="gTarget" min="1" placeholder="50" />
+          </div>
+          <div class="field">
+            <label class="lbl" for="gText">Nama goal</label>
+            <input type="text" id="gText" placeholder="Makan cabe level 10" />
+          </div>
+          <div class="field">
+            <label class="lbl" for="gBonus">Bonus waktu</label>
+            <div class="suffix">
+              <input type="number" id="gBonus" min="0" step="any" placeholder="0" />
+              <span>menit</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="lbl">
+              Scene OBS
+              <span class="hint">(opsional)</span>
+            </label>
+            <div id="gSceneBox"></div>
+          </div>
+          <button class="pri" id="bGoal">Tambah</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Target</th>
+              <th>Nama goal</th>
+              <th>Bonus (menit)</th>
+              <th>Scene OBS</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="goalRows"></tbody>
+        </table>
+      </section>
+
+      <!-- Sumber live -->
+      <section class="panel tab" id="tab-sumber" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Sumber live</h2>
+          <p class="hint">Dari mana DuckLive membaca member, gift, dan Super Chat.</p>
+        </div>
+        <div class="choices" id="srcChoices">
+          <label class="choice">
+            <input type="radio" name="src" value="scrape" />
+            <div>
+              <b>Baca live chat</b>
+              <span class="hint">Cukup tempel URL live. Tidak resmi, bisa berhenti bekerja jika YouTube berubah.</span>
+            </div>
+          </label>
+          <label class="choice">
+            <input type="radio" name="src" value="api" />
+            <div>
+              <b>YouTube API</b>
+              <span class="hint">Resmi dan stabil. Perlu setup Google Cloud dan login akun pemilik channel.</span>
+            </div>
+          </label>
+          <label class="choice">
+            <input type="radio" name="src" value="manual" />
+            <div>
+              <b>Manual</b>
+              <span class="hint">Tidak membaca live. Waktu ditambah lewat tombol saja.</span>
+            </div>
+          </label>
+        </div>
+        <div class="field">
+          <label class="lbl" for="f_video_url">URL live YouTube</label>
+          <input type="text" id="f_video_url" placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+        <div class="row" style="margin-top: 12px">
+          <button class="pri" id="bSrcStart">Sambungkan</button>
+          <button id="bSrcStop">Putuskan</button>
+        </div>
+        <div class="status-line">
+          <span class="dot" id="srcDot"></span>
+          <span id="srcStatus">Tidak tersambung</span>
+        </div>
+        <div class="note err" id="srcErr" hidden></div>
+
+        <div class="subpanel" id="apiBox" hidden>
+          <h3>Pengaturan YouTube API</h3>
+          <ol class="steps hint">
+            <li>Di Google Cloud: aktifkan <b>YouTube Data API v3</b>, buat OAuth client tipe <b>Desktop</b>.</li>
+            <li>
+              Unduh file JSON-nya, ganti nama menjadi <code>client_secret.json</code>, taruh di folder data (tombol di
+              bawah).
+            </li>
+            <li>Klik <b>Login Google</b> dengan akun pemilik channel.</li>
+          </ol>
+          <div class="row" style="margin: 12px 0">
+            <button id="bGoogle">Login Google</button>
+            <button id="bData2">Buka folder data</button>
+            <span class="hint" id="googleState"></span>
+          </div>
+          <div class="field" style="max-width: 320px">
+            <label class="lbl" for="s_api_poll_seconds">Cek chat setiap</label>
+            <div class="suffix">
+              <input type="number" id="s_api_poll_seconds" min="5" step="1" />
+              <span>detik</span>
+            </div>
+            <p class="hint">
+              45 detik cukup untuk 24 jam dengan kuota gratis harian. Lebih cepat = kuota lebih cepat habis.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Aturan -->
+      <section class="panel tab" id="tab-pengaturan" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Aturan</h2>
+          <p class="hint">Perubahan berlaku setelah klik Simpan.</p>
+        </div>
+        <div id="rulesForm"></div>
+        <div class="savebar">
+          <button class="pri" id="bSaveRules">Simpan aturan</button>
+          <span class="dirty" id="dirtyRules" hidden>Ada perubahan yang belum disimpan</span>
+        </div>
+      </section>
+
+      <!-- Tampilan overlay -->
+      <section class="panel tab" id="tab-tampilan" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Tampilan overlay</h2>
+          <p class="hint">
+            Atur gaya dasar untuk semua overlay, atau pilih satu overlay untuk diberi gaya khusus (mis. hanya Daftar
+            goal yang transparan). Preview langsung berubah; OBS baru berubah setelah klik Simpan.
+          </p>
+        </div>
+        <div class="target">
+          <span class="hint">Atur untuk:</span>
+          <div class="seg sm" role="group" aria-label="Overlay yang diatur" id="tgtPick"></div>
+        </div>
+        <div class="style-wrap">
+          <div>
+            <label class="check custom-row" id="customRow" hidden>
+              <input type="checkbox" id="customOn" />
+              <div>
+                <span id="customLbl"></span>
+                <div class="hint">Jika mati, overlay ini mengikuti pengaturan Semua overlay.</div>
+              </div>
+            </label>
+            <div class="narrow" id="styleForm"></div>
+          </div>
+          <aside class="preview" aria-label="Preview overlay">
+            <div class="row" style="justify-content: space-between">
+              <div class="seg sm" role="group" aria-label="Overlay yang ditampilkan" id="pvPick"></div>
+            </div>
+            <div class="pv-stage" id="pvStage" data-bg="dark">
+              <iframe id="pvFrame" title="Preview overlay" tabindex="-1"></iframe>
+            </div>
+            <div class="row" style="justify-content: space-between">
+              <div class="row">
+                <span class="hint">Latar:</span>
+                <div class="seg sm" role="group" aria-label="Latar preview" id="pvBg">
+                  <button type="button" data-bg="dark">Video gelap</button>
+                  <button type="button" data-bg="light">Video terang</button>
+                  <button type="button" data-bg="checker">Transparan</button>
+                </div>
+              </div>
+              <span class="pv-size" id="pvSize"></span>
+            </div>
+            <p class="pv-warn" id="pvWarn" hidden></p>
+            <div class="row" id="pvAlertBtns" hidden>
+              <button type="button" id="pvMember">Coba alert member</button>
+              <button type="button" id="pvGoal">Coba alert goal</button>
+            </div>
+            <p class="hint">
+              Preview memakai data timer dan goal yang sedang berjalan. Alert contoh hanya tampil di sini, tidak
+              tercatat dan tidak muncul di OBS.
+            </p>
+            <p class="hint">
+              Kotak preview mengikuti ukuran Browser Source yang disarankan, dan ikut memanjang jika isinya lebih
+              tinggi.
+            </p>
+          </aside>
+        </div>
+        <div class="savebar">
+          <button class="pri" id="bSaveStyle">Simpan tampilan</button>
+          <button id="bResetStyle">Batalkan perubahan</button>
+          <span class="dirty" id="dirtyStyle" hidden>Ada perubahan yang belum disimpan</span>
+        </div>
+      </section>
+
+      <!-- Pasang di OBS -->
+      <section class="panel tab" id="tab-overlay" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Pasang di OBS</h2>
+          <p class="hint">
+            Di OBS: Sources, klik +, pilih Browser, tempel URL, lalu isi lebar dan tinggi sesuai saran. Latar overlay
+            otomatis transparan.
+          </p>
+        </div>
+        <div id="overlayLinks"></div>
+      </section>
+
+      <!-- Tes & riwayat -->
+      <section class="panel tab" id="tab-riwayat" role="tabpanel" hidden>
+        <div class="panel-head">
+          <h2>Tes tanpa live</h2>
+          <p class="hint">Kirim event palsu untuk mencoba overlay di OBS. Klik Reset semua sebelum live sungguhan.</p>
+        </div>
+        <div class="row">
+          <input type="text" id="tName" value="Tester" style="width: 170px" aria-label="Nama penonton" />
+          <button data-t="member">Member baru</button>
+          <button data-t="gift1">Gift x1</button>
+          <button data-t="gift5">Gift x5</button>
+          <button data-t="gift50">Gift x50</button>
+          <button data-t="sc">Super Chat Rp25.000</button>
+        </div>
+
+        <div class="subpanel">
+          <div class="row" style="justify-content: space-between; margin-bottom: 8px">
+            <div>
+              <h3>Riwayat event</h3>
+              <p class="hint">40 event terakhir. Undo membatalkan hitungan dan waktu dari satu event.</p>
+            </div>
+            <button id="bCsv" title="Semua event, bisa dibuka di Excel">Unduh CSV</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Jam</th>
+                <th>Jenis</th>
+                <th>Nama</th>
+                <th>Jumlah</th>
+                <th>Waktu</th>
+                <th>Catatan</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="evRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Bantuan -->
+      <section class="panel tab" id="tab-bantuan" role="tabpanel" hidden>
+        <div class="panel-head"><h2>Panduan cepat</h2></div>
+        <ol class="steps">
+          <li>Buka tab <b>Aturan</b>: atur menit per member dan waktu awal, lalu klik <b>Simpan aturan</b>.</li>
+          <li>Buka tab <b>Goal</b>: tambahkan target, misalnya 50 member untuk "Makan cabe".</li>
+          <li>
+            Buka tab <b>Tampilan overlay</b>: pilih warna, ukuran, dan perataan sambil melihat preview, lalu simpan.
+          </li>
+          <li>Buka tab <b>Pasang di OBS</b>: salin URL dan pasang di OBS sebagai Browser Source.</li>
+          <li>
+            Buka tab <b>Tes &amp; riwayat</b>: coba tombol tes, lihat overlay di OBS bereaksi. Setelah selesai, klik
+            <b>Reset semua</b>.
+          </li>
+          <li>
+            Saat live: di tab <b>Sumber live</b> pilih <b>Baca live chat</b>, tempel URL live, klik <b>Sambungkan</b>,
+            lalu klik <b>Mulai</b> di atas.
+          </li>
+          <li>
+            Selesai live: klik <b>Matikan aplikasi</b> di kanan atas. Data tersimpan; saat dibuka lagi timer berstatus
+            jeda.
+          </li>
+          <li>Tab ini tertutup? Klik lagi ikon <b>DuckLive</b> di Desktop atau Start Menu.</li>
+        </ol>
+        <p class="hint" style="margin-top: 14px" id="dataDir"></p>
+      </section>
+    </main>
+    <div id="toast" role="status"></div>
+
+    <dialog class="modal" id="dlg" aria-labelledby="dlgTitle">
+      <form method="dialog">
+        <div class="modal-head">
+          <img id="dlgFace" alt="" width="60" height="60" src="/static/brand/mascot-normal.svg" />
+          <h2 id="dlgTitle"></h2>
+        </div>
+        <p class="modal-msg" id="dlgMsg"></p>
+        <input type="password" id="dlgInput" autocomplete="off" hidden />
+        <div class="modal-actions">
+          <button type="button" class="flat" id="dlgCancel">Batal</button>
+          <button type="submit" class="pri" id="dlgOk">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <section class="off" id="offScreen" hidden>
+      <div>
+        <div class="duck-wrap">
+          <img class="mascot" alt="" width="120" height="120" src="/static/brand/mascot-sleepy.svg" />
+        </div>
+        <h1>DuckLive sudah dimatikan</h1>
+        <p>Timer dan data sudah tersimpan. Overlay di OBS berhenti update sampai aplikasi dibuka lagi.</p>
+        <p>Untuk membuka lagi, klik ikon <b>DuckLive</b> di Desktop atau Start Menu. Tab ini boleh ditutup.</p>
+      </div>
+    </section>
+
+    <script src="/static/common.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const hashTok = location.hash.match(/token=([^&]+)/);
+      if (hashTok) {
+        localStorage.setItem("ducklive_token", decodeURIComponent(hashTok[1]));
+        history.replaceState(null, "", location.pathname);
+      }
+      let token = localStorage.getItem("ducklive_token") || "";
+
+      function toast(t) {
+        const e = $("toast");
+        e.textContent = t;
+        e.style.display = "block";
+        clearTimeout(toast.t);
+        toast.t = setTimeout(() => (e.style.display = "none"), 4000);
+      }
+      // ---------- dialog (pengganti confirm() dan prompt() bawaan browser)
+      // ask({...}) -> Promise: true/false, atau teks/null jika input: true.
+      function ask({
+        title,
+        message = "",
+        confirmText = "OK",
+        cancelText = "Batal",
+        danger = false,
+        face = "normal",
+        input = false,
+      }) {
+        const dlg = $("dlg"),
+          ok = $("dlgOk"),
+          field = $("dlgInput");
+        $("dlgTitle").textContent = title;
+        $("dlgMsg").textContent = message;
+        $("dlgFace").src = Sub.faceUrl(face);
+        ok.textContent = confirmText;
+        ok.className = danger ? "solid-danger" : "pri";
+        $("dlgCancel").textContent = cancelText;
+        field.hidden = !input;
+        field.value = "";
+        return new Promise((resolve) => {
+          const done = (confirmed) => {
+            dlg.onclose = null;
+            if (dlg.open) dlg.close();
+            resolve(input ? (confirmed ? field.value.trim() : null) : confirmed);
+          };
+          dlg.onclose = () => done(dlg.returnValue === "ok");
+          ok.onclick = (e) => {
+            e.preventDefault();
+            done(true);
+          };
+          $("dlgCancel").onclick = () => done(false);
+          dlg.onclick = (e) => {
+            if (e.target === dlg) done(false);
+          }; // klik di luar kotak
+          dlg.returnValue = "";
+          dlg.showModal();
+          (input ? field : danger ? $("dlgCancel") : ok).focus();
+        });
+      }
+
+      // Token diminta sekali walau beberapa request berjalan bersamaan.
+      let tokenAsk = null;
+      async function ensureToken() {
+        if (token) return;
+        tokenAsk ||= ask({
+          title: "Masukkan token admin",
+          message:
+            "Token belum tersimpan di browser ini.\nCara termudah: tutup tab ini, lalu klik ikon DuckLive di Desktop.\nAtau tempel isi file admin_token.txt dari folder data.",
+          confirmText: "Masuk",
+          input: true,
+        }).then((v) => {
+          token = v || "";
+          localStorage.setItem("ducklive_token", token);
+          tokenAsk = null;
+        });
+        await tokenAsk;
+      }
+
+      async function api(method, path, body, raw, quiet) {
+        await ensureToken();
+        const r = await fetch(path, {
+          method,
+          headers: { "X-Admin-Token": token, "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        });
+        if (r.status === 401) {
+          localStorage.removeItem("ducklive_token");
+          token = "";
+          toast("Token salah. Muat ulang halaman.");
+          throw new Error("401");
+        }
+        if (!r.ok) {
+          let m = r.statusText;
+          try {
+            m = (await r.json()).detail || m;
+          } catch (e) {}
+          if (!quiet) toast("Gagal: " + m);
+          throw new Error(m);
+        }
+        return raw ? r : (r.headers.get("content-type") || "").includes("json") ? r.json() : r.text();
+      }
+
+      // ---------- dropdown buatan sendiri
+      // options: [[value, label], ...]. Elemen hasilnya punya .value (get/set) dan memicu event "input".
+      let openDd = null;
+      function dropdown(options, { id, label, display } = {}) {
+        const root = Sub.el("div", "dd"),
+          btn = Sub.el("button"),
+          list = Sub.el("ul", "dd-list");
+        btn.type = "button";
+        btn.className = "dd-btn";
+        btn.setAttribute("aria-haspopup", "listbox");
+        btn.setAttribute("aria-expanded", "false");
+        if (label) btn.setAttribute("aria-label", label);
+        if (id) btn.id = id + "_btn";
+        const txt = Sub.el("span");
+        btn.append(txt);
+        list.setAttribute("role", "listbox");
+        list.hidden = true;
+        let value = options[0][0],
+          active = 0;
+        const opts = options.map(([v, t], i) => {
+          const li = Sub.el("li", "dd-opt", t);
+          li.setAttribute("role", "option");
+          li.dataset.v = v;
+          li.onmousedown = (e) => e.preventDefault();
+          li.onclick = () => {
+            choose(v);
+            close();
+            btn.focus();
+          };
+          li.onmousemove = () => setActive(i);
+          list.append(li);
+          return li;
+        });
+        function render() {
+          const i = options.findIndex(([v]) => v === value);
+          txt.textContent = display ? display(value) : (options[i] || options[0])[1];
+          opts.forEach((li, j) => li.setAttribute("aria-selected", String(j === i)));
+        }
+        function setActive(i) {
+          active = (i + opts.length) % opts.length;
+          opts.forEach((li, j) => li.classList.toggle("active", j === active));
+        }
+        function choose(v) {
+          if (v === value) return;
+          value = v;
+          render();
+          root.dispatchEvent(new Event("input", { bubbles: true }));
+          root.dispatchEvent(new Event("change"));
+        }
+        function open() {
+          if (openDd && openDd !== api_) openDd.close();
+          list.hidden = false;
+          root.classList.add("open");
+          btn.setAttribute("aria-expanded", "true");
+          // buka ke atas jika tidak muat di bawah
+          list.classList.toggle("up", btn.getBoundingClientRect().bottom + list.offsetHeight + 12 > innerHeight);
+          setActive(
+            Math.max(
+              0,
+              options.findIndex(([v]) => v === value),
+            ),
+          );
+          openDd = api_;
+        }
+        function close() {
+          list.hidden = true;
+          root.classList.remove("open");
+          btn.setAttribute("aria-expanded", "false");
+          if (openDd === api_) openDd = null;
+        }
+        const api_ = { close };
+        btn.onclick = () => (list.hidden ? open() : close());
+        btn.onkeydown = (e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (list.hidden) open();
+            else setActive(active + (e.key === "ArrowDown" ? 1 : -1));
+          } else if ((e.key === "Enter" || e.key === " ") && !list.hidden) {
+            e.preventDefault();
+            choose(options[active][0]);
+            close();
+          } else if (e.key === "Escape" || e.key === "Tab") close();
+        };
+        root.append(btn, list);
+        Object.defineProperty(root, "value", {
+          get: () => value,
+          set: (v) => {
+            value = v;
+            render();
+          },
+        });
+        root.refresh = render;
+        if (id) root.id = id;
+        render();
+        return root;
+      }
+      document.addEventListener("mousedown", (e) => {
+        if (openDd && !e.target.closest(".dd.open")) openDd.close();
+      });
+
+      // ---------- tema admin (terang / gelap)
+      function setUi(t) {
+        document.documentElement.dataset.ui = t;
+        localStorage.setItem("ducklive_ui_theme", t);
+        $("logo").src = `/static/brand/logo-mark${t === "dark" ? "-dark" : ""}.svg`;
+        document
+          .querySelectorAll("[data-ui-set]")
+          .forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.uiSet === t)));
+      }
+      document.querySelectorAll("[data-ui-set]").forEach((b) => (b.onclick = () => setUi(b.dataset.uiSet)));
+      setUi(document.documentElement.dataset.ui);
+
+      // ---------- tab
+      function showTab(name) {
+        if (!$("tab-" + name)) name = "bantuan";
+        document
+          .querySelectorAll("[data-tab]")
+          .forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+        document.querySelectorAll(".tab").forEach((s) => (s.hidden = s.id !== "tab-" + name));
+        localStorage.setItem("ducklive_tab", name);
+        if (name === "tampilan") loadPreview();
+      }
+      document.querySelectorAll("[data-tab]").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
+
+      // ---------- daftar overlay
+      const OVERLAYS = [
+        ["timer", "Timer", "Jam hitung mundur dan maskot.", 800, 200],
+        ["milestone", "Milestone", "Goal yang sedang dikejar dengan progress bar.", 800, 230],
+        ["goals", "Daftar goal", "Semua goal dengan tanda centang.", 600, 700],
+        ["alerts", "Alert", "Notifikasi member baru, gift, dan goal tercapai, dengan suara.", 800, 250],
+        ["ticker", "Ticker", "Teks berjalan: member terbaru dan top gifter.", 1920, 80],
+      ];
+      OVERLAYS.forEach(([path, name, desc, w, h]) => {
+        const url = `${location.origin}/overlay/${path}`;
+        const d = Sub.el("div", "ov"),
+          info = Sub.el("div");
+        info.append(
+          Sub.el("h3", "", name),
+          Sub.el("p", "hint", `${desc} Ukuran saran ${w} x ${h}.`),
+          Sub.el("code", "", url),
+        );
+        const b = Sub.el("button", "", "Salin URL");
+        b.onclick = () => {
+          navigator.clipboard.writeText(url);
+          toast(`URL ${name} disalin`);
+        };
+        d.append(info, b);
+        $("overlayLinks").append(d);
+      });
+
+      // ---------- formulir pengaturan: dikelompokkan, tiap field punya penjelasan
+      // [key, label, type, extra (satuan / opsi / [min,max,satuan]), penjelasan]
+      const RULES = [
+        [
+          "Aturan waktu",
+          "Berapa lama timer bertambah untuk setiap dukungan.",
+          [
+            ["minutes_per_member", "Member baru", "number", "menit", "Ditambahkan untuk setiap member baru."],
+            ["minutes_per_gift", "Gift membership", "number", "menit", "Per gift. Gift x5 menambah 5 kali nilai ini."],
+            ["initial_minutes", "Waktu awal", "number", "menit", "Isi timer saat pertama kali dan setelah Reset."],
+            ["max_hours", "Batas maksimum", "number", "jam", "Timer tidak akan melebihi batas ini."],
+          ],
+        ],
+        [
+          "Super Chat",
+          "Opsional. Isi 0 pada menit untuk tidak menghitung Super Chat.",
+          [
+            ["superchat_amount_per_step", "Setiap kelipatan", "number", "", "Contoh 10000 = setiap Rp10.000."],
+            ["superchat_minutes_per_step", "Menambah", "number", "menit", "Waktu per kelipatan."],
+            ["superchat_currency", "Mata uang", "text", "", "Kode 3 huruf, mis. IDR. Mata uang lain diabaikan."],
+          ],
+        ],
+      ];
+      const OBS_GROUP = [
+        "Integrasi OBS (ganti scene otomatis)",
+        "Di OBS: Tools > WebSocket Server Settings, centang Enable WebSocket server, klik Apply. Klik Show Connect Info untuk melihat port dan password, isi di bawah, lalu klik Simpan & tes koneksi.",
+        [
+          [
+            "obs_enabled",
+            "Aktifkan ganti scene otomatis",
+            "checkbox",
+            "",
+            "Saat goal tercapai, OBS pindah ke scene yang dipilih di tab Goal.",
+          ],
+          ["obs_host", "Host", "text", "", "Biasanya localhost."],
+          ["obs_port", "Port", "number", "", "Default OBS: 4455."],
+          ["obs_password", "Password", "password", "", "Kosongkan untuk tidak mengubah."],
+        ],
+      ];
+      const FONTS = [
+        ["Poppins, system-ui, sans-serif", "Poppins (DuckLive)"],
+        ["Segoe UI, system-ui, sans-serif", "Segoe UI"],
+        ["Arial, Helvetica, sans-serif", "Arial"],
+        ["Georgia, serif", "Georgia"],
+        ["Consolas, Courier New, monospace", "Consolas"],
+      ];
+      const STYLE = [
+        [
+          "Warna dan bentuk",
+          "",
+          [
+            [
+              "theme",
+              "Tema kartu",
+              "select",
+              [
+                ["dark", "Gelap"],
+                ["light", "Terang"],
+                ["neon", "Neon"],
+                ["transparent", "Transparan (tanpa kartu)"],
+              ],
+              "",
+            ],
+            ["accent", "Warna aksen", "color", "", "Progress bar, status, dan sorotan."],
+            [
+              "card_opacity",
+              "Kepekatan kartu",
+              "range",
+              [0, 100, "%"],
+              "Turunkan agar video di belakang sedikit terlihat.",
+            ],
+            ["corner_radius", "Sudut kartu", "range", [0, 40, "px"], "0 = siku, 40 = sangat bulat."],
+            ["card_border", "Garis tepi kartu", "checkbox", "", ""],
+          ],
+        ],
+        [
+          "Teks dan tata letak",
+          "",
+          [
+            ["font", "Font", "select", FONTS, "Selain Poppins, font harus terpasang di komputer."],
+            ["overlay_scale", "Ukuran", "range", [50, 200, "%"], "Perbesar/perkecil semua isi overlay."],
+            [
+              "align",
+              "Perataan",
+              "select",
+              [
+                ["left", "Kiri"],
+                ["center", "Tengah"],
+                ["right", "Kanan"],
+              ],
+              "Posisi isi di dalam Browser Source.",
+            ],
+            ["text_shadow", "Bayangan teks", "checkbox", "", "Membuat angka timer lebih terbaca di atas video."],
+          ],
+        ],
+        [
+          "Isi",
+          "",
+          [
+            ["unit_label", "Nama satuan", "text", "", 'Tampil sebagai "52 / 100 Member".'],
+            ["goals_title", "Judul daftar goal", "text", "", ""],
+            ["rule_text", "Teks aturan", "text", "", "Di bawah daftar goal. Kosongkan untuk dibuat otomatis."],
+            ["mascot", "Tampilkan maskot bebek", "checkbox", "", "Tidur saat jeda, senang saat ada member."],
+            ["sound", "Bunyikan suara saat alert", "checkbox", "", ""],
+          ],
+        ],
+      ];
+
+      function buildField([k, label, type, extra, help]) {
+        const f = Sub.el("div", "field");
+        if (type === "checkbox") {
+          const inp = Sub.el("input");
+          inp.type = "checkbox";
+          inp.id = "s_" + k;
+          const l = Sub.el("label", "check"),
+            t = Sub.el("div", "", label);
+          if (help) t.append(Sub.el("div", "hint", help));
+          l.append(inp, t);
+          f.append(l);
+          return f;
+        }
+        const lbl = Sub.el("label", "lbl");
+        lbl.append(Sub.el("span", "", label));
+        f.append(lbl);
+        if (type === "select") {
+          const dd = dropdown(extra, { id: "s_" + k, label });
+          lbl.htmlFor = "s_" + k + "_btn";
+          f.append(dd);
+        } else if (type === "range") {
+          const [min, max, unit] = extra,
+            inp = Sub.el("input"),
+            out = Sub.el("output");
+          inp.type = "range";
+          inp.min = min;
+          inp.max = max;
+          inp.step = 1;
+          inp.id = "s_" + k;
+          lbl.htmlFor = inp.id;
+          const show = () => (out.textContent = inp.value + unit);
+          inp.addEventListener("input", show);
+          inp.refresh = show;
+          lbl.append(out);
+          f.append(inp);
+        } else {
+          const inp = Sub.el("input");
+          inp.type = type;
+          inp.id = "s_" + k;
+          lbl.htmlFor = inp.id;
+          if (type === "number") inp.step = "any";
+          if (type === "number" && extra) {
+            const w = Sub.el("div", "suffix");
+            w.append(inp, Sub.el("span", "", extra));
+            f.append(w);
+          } else f.append(inp);
+        }
+        if (help) f.append(Sub.el("p", "hint", help));
+        return f;
+      }
+      function buildGroup([title, help, fields], into) {
+        const g = Sub.el("div", "group");
+        if (title.trim()) g.append(Sub.el("h3", "", title));
+        if (help) g.append(Sub.el("p", "hint", help));
+        const grid = Sub.el("div", "fields");
+        fields.forEach((fd) => grid.append(buildField(fd)));
+        g.append(grid);
+        into.append(g);
+        return g;
+      }
+      RULES.forEach((g) => buildGroup(g, $("rulesForm")));
+      const adv = Sub.el("details", "adv group");
+      adv.append(Sub.el("summary", "", OBS_GROUP[0]));
+      const advBody = Sub.el("div");
+      adv.append(advBody);
+      buildGroup([" ", OBS_GROUP[1], OBS_GROUP[2]], advBody);
+      const obsRow = Sub.el("div", "row");
+      obsRow.style.marginTop = "12px";
+      const bObsTest = Sub.el("button", "pri", "Simpan & tes koneksi"),
+        clr = Sub.el("button", "", "Hapus password OBS");
+      obsRow.append(bObsTest, clr);
+      advBody.append(obsRow);
+      const obsStatus = Sub.el("div", "note");
+      obsStatus.hidden = true;
+      advBody.append(obsStatus);
+      $("rulesForm").append(adv);
+      const STYLE_GROUPS = STYLE.map((g) => buildGroup(g, $("styleForm")));
+
+      const fieldsOf = (groups) => groups.flatMap((g) => g[2]);
+      const RULE_FIELDS = fieldsOf([...RULES, OBS_GROUP]);
+      const STYLE_FIELDS = fieldsOf(STYLE);
+      const PER_FIELDS = fieldsOf(STYLE.slice(0, 2)); // "Warna dan bentuk" + "Teks dan tata letak" boleh beda per overlay
+      const readField = ([k, , type]) => {
+        const e = $("s_" + k);
+        return type === "checkbox" ? e.checked : type === "range" ? +e.value : e.value;
+      };
+      function writeField([k, , type, extra], v) {
+        const e = $("s_" + k);
+        if (type === "checkbox") e.checked = !!v;
+        else if (type === "select" && k === "font" && !extra.some(([x]) => x === v)) {
+          extra.push([v, "Kustom: " + v]);
+          e.replaceWith(dropdown(extra, { id: "s_" + k, label: "Font" }));
+          $("s_" + k).value = v;
+        } else {
+          e.value = v;
+          if (e.refresh) e.refresh();
+        }
+      }
+      const collect = (fields) => Object.fromEntries(fields.map((f) => [f[0], readField(f)]));
+
+      let saved = {};
+      async function loadSettings() {
+        saved = await api("GET", "/api/settings");
+        RULE_FIELDS.forEach((f) => writeField(f, saved[f[0]]));
+        resetStyleModel();
+        $("s_api_poll_seconds").value = saved.api_poll_seconds;
+        setSource(saved.source);
+        $("f_video_url").value = saved.video_url;
+        $("dirtyRules").hidden = $("dirtyStyle").hidden = true;
+        sendPreview();
+      }
+      $("rulesForm").addEventListener("input", () => ($("dirtyRules").hidden = false));
+      $("styleForm").addEventListener("input", () => {
+        formToModel();
+        $("dirtyStyle").hidden = false;
+        sendPreview();
+      });
+      async function saveRules() {
+        const p = collect(RULE_FIELDS);
+        if (p.obs_password === "" || p.obs_password === "********") delete p.obs_password;
+        await api("POST", "/api/settings", p);
+        saved = await api("GET", "/api/settings");
+        $("dirtyRules").hidden = true;
+      }
+      $("bSaveRules").onclick = async () => {
+        await saveRules();
+        toast("Aturan tersimpan");
+        obsWarning();
+        if (saved.obs_enabled) loadObsScenes();
+      };
+      $("bSaveStyle").onclick = async () => {
+        formToModel();
+        const p = styleSettings();
+        await api("POST", "/api/settings", p);
+        saved = await api("GET", "/api/settings");
+        $("dirtyStyle").hidden = true;
+        toast("Tampilan tersimpan. Overlay di OBS ikut berubah.");
+      };
+      $("bResetStyle").onclick = () => {
+        resetStyleModel();
+        sendPreview();
+      };
+
+      // ---------- gaya dasar + gaya khusus per overlay
+      // model.global = gaya untuk semua overlay; model.per[nama] = gaya khusus (hanya PER_FIELDS) jika diaktifkan.
+      let model = { global: {}, per: {} },
+        target = "all";
+      const TARGETS = [["all", "Semua overlay"], ...OVERLAYS.map((o) => [o[0], o[1]])];
+      const pick = (obj, fields) => Object.fromEntries(fields.map(([k]) => [k, obj[k]]));
+      const styleSettings = () => ({ ...model.global, overlay_styles: model.per });
+      function resetStyleModel() {
+        model = { global: pick(saved, STYLE_FIELDS), per: JSON.parse(JSON.stringify(saved.overlay_styles || {})) };
+        modelToForm();
+        $("dirtyStyle").hidden = true;
+      }
+      function formToModel() {
+        if (target === "all") model.global = collect(STYLE_FIELDS);
+        else if (model.per[target]) model.per[target] = collect(PER_FIELDS);
+      }
+      function modelToForm() {
+        const all = target === "all",
+          own = model.per[target];
+        if (all) STYLE_FIELDS.forEach((f) => writeField(f, model.global[f[0]]));
+        else PER_FIELDS.forEach((f) => writeField(f, (own || model.global)[f[0]]));
+        const locked = !all && !own;
+        STYLE_GROUPS.slice(0, 2).forEach((g) => {
+          g.inert = locked;
+          g.classList.toggle("locked", locked);
+        });
+        STYLE_GROUPS[2].hidden = !all; // isi (nama satuan, maskot, suara) selalu berlaku untuk semua overlay
+        $("customRow").hidden = all;
+        $("customOn").checked = !!own;
+        if (!all) $("customLbl").textContent = `Gaya khusus untuk ${TARGETS.find((t) => t[0] === target)[1]}`;
+        $("pvPick").hidden = !all; // saat mengatur satu overlay, preview selalu overlay itu
+        renderTargets();
+      }
+      function renderTargets() {
+        $("tgtPick").replaceChildren(
+          ...TARGETS.map(([v, label]) => {
+            const b = Sub.el("button", "", label);
+            b.type = "button";
+            b.setAttribute("aria-pressed", String(v === target));
+            if (v !== "all" && model.per[v]) b.append(Sub.el("span", "tag", "khusus"));
+            b.onclick = () => {
+              formToModel();
+              target = v;
+              modelToForm();
+              if (v !== "all") {
+                pvName = v;
+                localStorage.setItem("ducklive_pv", v);
+                loadPreview(true);
+              }
+            };
+            return b;
+          }),
+        );
+      }
+      $("customOn").onchange = () => {
+        if ($("customOn").checked)
+          model.per[target] = pick(model.global, PER_FIELDS); // mulai dari gaya dasar
+        else delete model.per[target];
+        modelToForm();
+        $("dirtyStyle").hidden = false;
+        sendPreview();
+      };
+      renderTargets();
+      clr.onclick = async () => {
+        await api("POST", "/api/settings", { obs_password: "" });
+        $("s_obs_password").value = "";
+        toast("Password OBS dihapus");
+      };
+
+      // ---------- preview overlay
+      let pvName = localStorage.getItem("ducklive_pv") || "timer";
+      OVERLAYS.forEach(([path, name]) => {
+        const b = Sub.el("button", "", name);
+        b.type = "button";
+        b.dataset.pv = path;
+        b.onclick = () => {
+          pvName = path;
+          localStorage.setItem("ducklive_pv", path);
+          loadPreview(true);
+        };
+        $("pvPick").append(b);
+      });
+      document.querySelectorAll("#pvBg [data-bg]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            $("pvStage").dataset.bg = b.dataset.bg;
+            localStorage.setItem("ducklive_pv_bg", b.dataset.bg);
+            markPressed("#pvBg [data-bg]", "bg", b.dataset.bg);
+          }),
+      );
+      function markPressed(sel, key, val) {
+        document.querySelectorAll(sel).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset[key] === val)));
+      }
+      $("pvStage").dataset.bg = localStorage.getItem("ducklive_pv_bg") || "dark";
+      markPressed("#pvBg [data-bg]", "bg", $("pvStage").dataset.bg);
+
+      function contentHeight() {
+        try {
+          const b = $("pvFrame").contentDocument.body;
+          return b ? Math.ceil(b.getBoundingClientRect().height) : 0;
+        } catch (e) {
+          return 0;
+        }
+      }
+      function fitPreview() {
+        const [, name, , w, h] = OVERLAYS.find((x) => x[0] === pvName);
+        const need = pvName === "alerts" ? 0 : contentHeight(); // tinggi alert berubah-ubah saat animasi
+        const tall = Math.max(h, need);
+        const avail = $("pvStage").parentElement.clientWidth - 4;
+        const s = Math.min(avail / w, 460 / tall);
+        const f = $("pvFrame");
+        f.style.width = w + "px";
+        f.style.height = tall + "px";
+        f.style.transform = `scale(${s})`;
+        $("pvStage").style.height = Math.round(tall * s) + "px";
+        $("pvSize").textContent = `Ukuran saran ${w} x ${h} px, ditampilkan ${Math.round(s * 100)}%`;
+        const over = need > h;
+        $("pvWarn").hidden = !over;
+        if (over)
+          $("pvWarn").textContent =
+            `Isi ${name} setinggi ${need} px, lebih tinggi dari ukuran saran. Di OBS, atur tinggi Browser Source ini minimal ${Math.ceil(need / 10) * 10} px agar tidak terpotong.`;
+      }
+      // isi bisa berubah kapan saja (pengaturan, goal baru), jadi ukur ulang berkala selama tab terbuka
+      setInterval(() => {
+        if (!$("tab-tampilan").hidden) fitPreview();
+      }, 700);
+      function loadPreview(force) {
+        markPressed("#pvPick [data-pv]", "pv", pvName);
+        $("pvAlertBtns").hidden = pvName !== "alerts";
+        const url = `/overlay/${pvName}`;
+        if (force || !$("pvFrame").src.endsWith(url)) $("pvFrame").src = url;
+        fitPreview();
+      }
+      function sendPreview() {
+        const w = $("pvFrame").contentWindow;
+        if (w) w.postMessage({ type: "preview-settings", settings: styleSettings() }, location.origin);
+      }
+      const sampleMember = () => ({
+        kind: "member",
+        author: "Penonton",
+        units: 1,
+        seconds_added: (+$("s_minutes_per_member").value || 3) * 60,
+      });
+      $("pvFrame").addEventListener("load", () => {
+        sendPreview();
+        setTimeout(fitPreview, 300);
+        if (pvName === "alerts")
+          setTimeout(
+            () =>
+              $("pvFrame").contentWindow.postMessage({ type: "preview-event", event: sampleMember() }, location.origin),
+            400,
+          );
+      });
+      $("pvMember").onclick = () =>
+        $("pvFrame").contentWindow.postMessage({ type: "preview-event", event: sampleMember() }, location.origin);
+      $("pvGoal").onclick = () =>
+        $("pvFrame").contentWindow.postMessage(
+          { type: "preview-goal", goal: { text: "Contoh goal", target: 50, bonus_seconds: 600 } },
+          location.origin,
+        );
+      addEventListener("resize", () => {
+        if (!$("tab-tampilan").hidden) fitPreview();
+      });
+
+      // ---------- aplikasi
+      const openData = () => api("POST", "/api/open-data-dir");
+      $("bData").onclick = openData;
+      $("bData2").onclick = openData;
+      $("bQuit").onclick = async () => {
+        const yes = await ask({
+          title: "Matikan DuckLive?",
+          message: "Timer dan data tersimpan otomatis. Overlay di OBS berhenti update sampai aplikasi dibuka lagi.",
+          confirmText: "Matikan",
+          danger: true,
+          face: "sleepy",
+        });
+        if (!yes) return;
+        await api("POST", "/api/shutdown");
+        document.querySelector(".topbar").hidden = true;
+        document.querySelector("main").hidden = true;
+        $("offScreen").hidden = false;
+      };
+
+      // ---------- kontrol timer
+      $("bStart").onclick = () =>
+        api("POST", "/api/control/" + (Sub.state && Sub.state.status === "paused" ? "resume" : "start"));
+      $("bPause").onclick = () => api("POST", "/api/control/pause");
+      $("bReset").onclick = () => {
+        ask({
+          title: "Reset semua?",
+          message:
+            "Timer kembali ke waktu awal, total jadi 0, dan riwayat event dihapus. Daftar goal tetap ada.\nTidak bisa dibatalkan.",
+          confirmText: "Reset",
+          danger: true,
+        }).then((yes) => yes && api("POST", "/api/control/reset"));
+      };
+      $("bAdd").onclick = () => api("POST", "/api/time", { minutes: +$("adj").value });
+      $("bSub").onclick = () => api("POST", "/api/time", { minutes: -$("adj").value });
+      $("bMult").onclick = () => api("POST", "/api/multiplier", { value: +$("mVal").value, minutes: +$("mMin").value });
+      $("bMultOff").onclick = () => api("POST", "/api/multiplier", { value: 1, minutes: 0 });
+      $("bCounter").onclick = async () => {
+        if ($("cVal").value === "") return toast("Isi total baru dulu");
+        await api("POST", "/api/counter", { value: +$("cVal").value });
+        $("cVal").value = "";
+        toast("Total diperbarui");
+      };
+      document.querySelectorAll("[data-t]").forEach(
+        (b) =>
+          (b.onclick = () => {
+            const t = b.dataset.t,
+              name = $("tName").value || "Tester";
+            const body =
+              t === "member"
+                ? { kind: "member", author: name }
+                : t === "sc"
+                  ? { kind: "superchat", author: name, amount: 25000, currency: "IDR" }
+                  : { kind: "gift", author: name, units: +t.slice(4) };
+            api("POST", "/api/events/test", body);
+          }),
+      );
+
+      // ---------- sumber live
+      const getSource = () => (document.querySelector("input[name=src]:checked") || {}).value || "manual";
+      function setSource(v) {
+        document.querySelectorAll("input[name=src]").forEach((r) => (r.checked = r.value === v));
+        $("apiBox").hidden = v !== "api";
+      }
+      document.querySelectorAll("input[name=src]").forEach((r) => (r.onchange = () => setSource(getSource())));
+      $("bSrcStart").onclick = async () => {
+        const p = { source: getSource(), video_url: $("f_video_url").value };
+        if (p.source === "api") p.api_poll_seconds = $("s_api_poll_seconds").value;
+        await api("POST", "/api/settings", p);
+        if (p.source === "manual") {
+          toast("Mode manual tidak perlu disambungkan");
+          return;
+        }
+        await api("POST", "/api/source/start");
+        setTimeout(refreshSource, 1500);
+      };
+      $("bSrcStop").onclick = async () => {
+        await api("POST", "/api/source/stop");
+        refreshSource();
+      };
+      $("bGoogle").onclick = async () => {
+        await api("POST", "/api/google/login");
+        toast("Selesaikan login di jendela browser yang terbuka");
+      };
+      async function refreshSource() {
+        try {
+          const s = await api("GET", "/api/source/status");
+          const retrying = s.running && s.retries > 0;
+          const state = retrying ? "retry" : s.running ? "ok" : s.error ? "error" : "off";
+          $("srcDot").dataset.state = state;
+          $("srcStatus").textContent =
+            { ok: "Tersambung", retry: "Menyambung ulang", error: "Berhenti", off: "Tidak tersambung" }[state] +
+            (s.info && state !== "off" ? ` (${s.info})` : "");
+          const hint =
+            retrying && s.retries >= 5
+              ? " Jika terus gagal: cek URL live, tunggu beberapa menit, atau gunakan YouTube API."
+              : "";
+          $("srcErr").hidden = !s.error;
+          $("srcErr").textContent = s.error ? s.error + "." + hint : "";
+          $("googleState").textContent =
+            `client_secret.json: ${s.google_client_secret ? "ada" : "belum ada"}. Login Google: ${s.google_logged_in ? "sudah" : "belum"}.`;
+          $("dataDir").textContent = `Folder data: ${s.data_dir}`;
+        } catch (e) {}
+      }
+
+      // ---------- OBS: daftar scene untuk dropdown, tes koneksi
+      let obsScenes = null; // null = belum tahu / OBS tidak tersambung -> kolom scene jadi isian teks
+      async function loadObsScenes(fromButton) {
+        try {
+          const info = await api("GET", "/api/obs/scenes", undefined, false, true);
+          obsScenes = info.scenes;
+          obsStatus.className = "note ok";
+          obsStatus.textContent = `Tersambung ke OBS ${info.version}. Scene: ${info.scenes.join(", ")}.`;
+          if (fromButton) toast("OBS tersambung");
+        } catch (e) {
+          obsScenes = null;
+          obsStatus.className = "note err";
+          obsStatus.textContent = e.message;
+          if (fromButton) toast("OBS belum tersambung");
+        }
+        obsStatus.hidden = false;
+        buildAddScene(addScene ? addScene.value : "");
+        if (Sub.state) renderGoals(Sub.state);
+        obsWarning();
+      }
+      bObsTest.onclick = async () => {
+        await saveRules();
+        loadObsScenes(true);
+      };
+      // Kontrol pilih scene: dropdown berisi scene asli dari OBS (anti salah ketik), atau isian teks jika OBS belum tersambung.
+      function sceneControl(value, onChange) {
+        if (!obsScenes) {
+          const i = Sub.el("input");
+          i.type = "text";
+          i.value = value || "";
+          i.placeholder = "Nama scene";
+          i.onchange = () => onChange(i.value.trim());
+          return i;
+        }
+        const opts = [["", "Tidak pindah scene"], ...obsScenes.map((n) => [n, n])];
+        if (value && !obsScenes.includes(value)) opts.push([value, `${value} (tidak ada di OBS)`]);
+        const d = dropdown(opts, { label: "Scene OBS" });
+        d.value = value || "";
+        d.addEventListener("change", () => onChange(d.value));
+        return d;
+      }
+      let addScene = null;
+      function buildAddScene(v) {
+        addScene = sceneControl(v, () => {});
+        $("gSceneBox").replaceChildren(addScene);
+      }
+      buildAddScene("");
+      // Peringatan di tab Goal: ada goal ber-scene tapi fiturnya belum siap
+      function obsWarning() {
+        const goals = (Sub.state && Sub.state.goals) || [],
+          used = goals.some((g) => g.scene);
+        let msg = "";
+        if (used && !saved.obs_enabled) msg = "Ada goal dengan Scene OBS, tapi ganti scene otomatis belum diaktifkan.";
+        else if (used && obsScenes === null && !obsStatus.hidden)
+          msg = "Ganti scene aktif, tapi OBS belum tersambung: " + obsStatus.textContent;
+        $("obsWarn").hidden = !msg;
+        $("obsWarnText").textContent = msg;
+      }
+      $("bObsOpen").onclick = () => {
+        showTab("pengaturan");
+        adv.open = true;
+        adv.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+
+      // ---------- goal
+      $("bGoal").onclick = async () => {
+        if (!$("gTarget").value || !$("gText").value) return toast("Isi target dan nama goal");
+        await api("POST", "/api/goals", {
+          target: +$("gTarget").value,
+          text: $("gText").value,
+          bonus_minutes: +($("gBonus").value || 0),
+          scene: addScene.value,
+        });
+        ["gTarget", "gText", "gBonus"].forEach((i) => ($(i).value = ""));
+        buildAddScene("");
+      };
+      // Tabel hanya dibangun ulang jika datanya berubah dan user tidak sedang mengedit (state datang tiap 5 detik).
+      let goalKey = "",
+        pendingGoals = null;
+      const editingGoals = () =>
+        $("goalRows").contains(document.activeElement) || !!$("goalRows").querySelector(".dd.open");
+      $("goalRows").addEventListener("focusout", () =>
+        setTimeout(() => {
+          if (pendingGoals && !editingGoals()) renderGoals(pendingGoals);
+        }, 0),
+      );
+      function renderGoals(st) {
+        const key = JSON.stringify([st.goals, obsScenes]);
+        if (key === goalKey) return;
+        if (editingGoals()) {
+          pendingGoals = st;
+          return;
+        }
+        goalKey = key;
+        pendingGoals = null;
+        const body = $("goalRows");
+        body.replaceChildren();
+        if (!st.goals.length) {
+          const tr = Sub.el("tr");
+          const td = Sub.el("td", "empty", "Belum ada goal. Tambahkan di atas.");
+          td.colSpan = 6;
+          tr.append(td);
+          body.append(tr);
+          return;
+        }
+        st.goals.forEach((g) => {
+          const tr = Sub.el("tr");
+          const cell = (n) => {
+            const td = Sub.el("td");
+            td.append(n);
+            tr.append(td);
+            return td;
+          };
+          const put = (patch) => api("PUT", "/api/goals/" + g.id, patch);
+          const t = Sub.el("input");
+          t.type = "number";
+          t.value = g.target;
+          t.onchange = () => put({ target: +t.value });
+          const x = Sub.el("input");
+          x.type = "text";
+          x.value = g.text;
+          x.onchange = () => put({ text: x.value });
+          const b = Sub.el("input");
+          b.type = "number";
+          b.step = "any";
+          b.value = g.bonus_minutes;
+          b.onchange = () => put({ bonus_minutes: +b.value });
+          const sc = Sub.el("div", "scene-cell"),
+            ctl = sceneControl(g.scene, (v) => put({ scene: v }));
+          const tryB = Sub.el("button", "flat", "Coba");
+          tryB.title = "Pindah ke scene ini sekarang";
+          tryB.disabled = !g.scene;
+          tryB.onclick = async () => {
+            await api("POST", "/api/obs/scene", { scene: ctl.value });
+            toast(`OBS pindah ke scene '${ctl.value}'`);
+          };
+          sc.append(ctl, tryB);
+          const sel = dropdown(
+            [
+              ["auto", "Otomatis"],
+              ["done", "Tercapai"],
+              ["open", "Belum tercapai"],
+            ],
+            {
+              label: "Status goal",
+              display: (v) =>
+                v === "auto"
+                  ? `Otomatis: ${g.done ? "tercapai" : "belum"}`
+                  : v === "done"
+                    ? "Tercapai (manual)"
+                    : "Belum (manual)",
+            },
+          );
+          sel.value = g.manual_done === null ? "auto" : g.manual_done ? "done" : "open";
+          sel.addEventListener("change", () =>
+            put({ manual_done: sel.value === "auto" ? null : sel.value === "done" }),
+          );
+          const del = Sub.el("button", "danger flat", "Hapus");
+          del.onclick = async () => {
+            const yes = await ask({
+              title: "Hapus goal?",
+              message: `"${g.text}" (target ${Sub.num(g.target)})`,
+              confirmText: "Hapus",
+              danger: true,
+            });
+            if (yes) api("DELETE", "/api/goals/" + g.id);
+          };
+          cell(t);
+          cell(x);
+          cell(b);
+          cell(sc);
+          cell(sel);
+          cell(del);
+          body.append(tr);
+        });
+      }
+
+      // ---------- riwayat
+      const KIND = {
+        member: "Member",
+        gift: "Gift",
+        superchat: "Super Chat",
+        manual: "Ubah waktu",
+        set: "Koreksi total",
+      };
+      let evKey = "";
+      function renderEvents(st) {
+        const key = JSON.stringify(st.events);
+        if (key === evKey) return;
+        evKey = key;
+        const body = $("evRows");
+        body.replaceChildren();
+        if (!st.events.length) {
+          const tr = Sub.el("tr");
+          const td = Sub.el("td", "empty", "Belum ada event.");
+          td.colSpan = 7;
+          tr.append(td);
+          body.append(tr);
+          return;
+        }
+        st.events.forEach((e) => {
+          const tr = Sub.el("tr", e.undone ? "undone" : "");
+          const cell = (v) => {
+            const td = Sub.el("td", "", v);
+            tr.append(td);
+            return td;
+          };
+          const mins = e.seconds_added
+            ? `${e.seconds_added > 0 ? "+" : ""}${(e.seconds_added / 60).toFixed(1)} mnt`
+            : "";
+          cell(new Date(e.ts * 1000).toLocaleTimeString("id-ID"));
+          cell(KIND[e.kind] || e.kind);
+          cell(e.author);
+          cell(e.units || "");
+          cell(mins);
+          cell(e.note);
+          const td = Sub.el("td");
+          if (!e.undone && e.kind !== "set") {
+            const u = Sub.el("button", "flat", "Undo");
+            u.onclick = () => api("POST", `/api/events/${e.id}/undo`);
+            td.append(u);
+          }
+          tr.append(td);
+          body.append(tr);
+        });
+      }
+      $("bCsv").onclick = async () => {
+        const r = await api("GET", "/api/export.csv", undefined, true);
+        const u = URL.createObjectURL(await r.blob());
+        const a = document.createElement("a");
+        a.href = u;
+        a.download = "events.csv";
+        a.click();
+        URL.revokeObjectURL(u);
+      };
+
+      // ---------- status live
+      const LABELS = { idle: "Siap", running: "Berjalan", paused: "Jeda", ended: "Selesai" };
+      const duck = Sub.mascot($("duck"));
+      Sub.on("event", (m) => {
+        if (m.kind !== "manual") duck.flash("happy", 3000);
+      });
+      Sub.on("goal", () => duck.flash("celebrate", 5000));
+      Sub.on("state", (st) => {
+        $("status").textContent = LABELS[st.status];
+        $("status").dataset.s = st.status;
+        duck.status(st.status);
+        $("counter").textContent = Sub.num(st.counter);
+        $("bStart").textContent = st.status === "paused" ? "Lanjutkan" : "Mulai";
+        $("bStart").disabled = st.status === "running" || st.status === "ended";
+        $("bPause").disabled = st.status !== "running";
+        const m = st.multiplier;
+        $("mult").hidden = m.value === 1;
+        $("mult").textContent = `x${m.value} (${Math.ceil(m.ends_in / 60)} menit lagi)`;
+        renderGoals(st);
+        renderEvents(st);
+        obsWarning();
+      });
+      Sub.on("toast", (m) => toast(m.text));
+      (function loop() {
+        const [a, b, c] = Sub.hms(Sub.remaining());
+        $("clock").textContent = `${Sub.pad(a)}:${Sub.pad(b)}:${Sub.pad(c)}`;
+        requestAnimationFrame(loop);
+      })();
+      showTab(localStorage.getItem("ducklive_tab") || "bantuan"); // kunjungan pertama langsung ke panduan
+      Sub.start();
+      loadSettings()
+        .then(() => {
+          obsWarning();
+          if (saved.obs_enabled) loadObsScenes();
+        })
+        .catch(() => {});
+      refreshSource();
+      setInterval(refreshSource, 8000);
+    </script>
+  </body>
+</html>

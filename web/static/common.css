@@ -1,0 +1,138 @@
+/* DuckLive brand: datar, garis tebal, hangat. Token warna dari brand board Figma. */
+@font-face {
+  font-family: "Poppins";
+  font-weight: 400;
+  font-display: swap;
+  src: url("/static/fonts/Poppins-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 600;
+  font-display: swap;
+  src: url("/static/fonts/Poppins-SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 700;
+  font-display: swap;
+  src: url("/static/fonts/Poppins-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 800;
+  font-display: swap;
+  src: url("/static/fonts/Poppins-ExtraBold.ttf") format("truetype");
+}
+
+:root {
+  --ink: #1c1a17;
+  --paper: #fffbf2;
+  --white: #ffffff;
+  --orange: #f4a93c;
+  --orange-soft: #fdebcb;
+  --green: #4e9b70;
+  --green-soft: #dff0e5;
+  --line: #e7e0d2;
+  --muted-c: #6f685c;
+  --red: #e4572e;
+
+  --font: Poppins, system-ui, sans-serif;
+  --accent: var(--orange);
+  --stroke: 2px;
+  --radius: 20px;
+  --radius-sm: 14px;
+}
+
+/* Tema overlay. "dark" = kartu ink (default), "light" = kartu putih. */
+body {
+  --fg: var(--white);
+  --muted: var(--line);
+  --card: var(--ink);
+  --card-border: var(--ink);
+  --track: rgba(255, 255, 255, 0.16);
+  --done: var(--green-soft);
+  --done-box: var(--green);
+  --shadow: 3px 3px 0 var(--ink);
+}
+body[data-theme="light"] {
+  --fg: var(--ink);
+  --muted: var(--muted-c);
+  --card: var(--white);
+  --card-border: var(--ink);
+  --track: var(--line);
+  --done: var(--green);
+  --done-box: var(--green);
+  --shadow: none;
+}
+body[data-theme="neon"] {
+  --fg: #eaffff;
+  --muted: #7fd6e6;
+  --card: rgba(8, 10, 30, 0.9);
+  --card-border: rgba(0, 220, 255, 0.6);
+  --track: rgba(255, 255, 255, 0.15);
+  --done: #39ff88;
+  --done-box: #1b9c4a;
+  --shadow: 0 0 12px rgba(0, 220, 255, 0.6);
+}
+body[data-theme="transparent"] {
+  --card: transparent;
+  --card-border: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: transparent;
+  font-family: var(--font);
+  color: var(--fg);
+  overflow: hidden;
+}
+/* Ukuran overlay (pengaturan "Ukuran"): seluruh isi diperbesar/diperkecil dari pojok kiri atas,
+   lebar body dikompensasi agar perataan kiri/tengah/kanan tetap mengikuti lebar Browser Source. */
+body:not([data-admin]) {
+  width: calc(100vw / var(--scale, 1));
+  transform: scale(var(--scale, 1));
+  transform-origin: 0 0;
+}
+.shadow {
+  text-shadow: var(--shadow);
+}
+body.no-shadow .shadow {
+  text-shadow: none;
+}
+.card {
+  background: color-mix(in srgb, var(--card) var(--card-alpha, 100%), transparent);
+  border: var(--stroke) solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+}
+.hidden,
+[hidden] {
+  display: none !important;
+}
+
+/* Maskot bebek: berganti ekspresi sesuai status (lihat Sub.mascot di common.js). */
+.mascot {
+  display: block;
+  flex: none;
+}
+.mascot.bump {
+  animation: mascot-bump 0.5s ease-out;
+}
+@keyframes mascot-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.12) rotate(-4deg);
+  }
+  70% {
+    transform: scale(0.97) rotate(2deg);
+  }
+  100% {
+    transform: none;
+  }
+}

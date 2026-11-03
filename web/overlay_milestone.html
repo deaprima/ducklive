@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Milestone</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      /* Goal/milestone yang sedang berjalan: judul, hitungan, progress bar. */
+      body {
+        padding: 12px;
+      }
+      .goal {
+        text-align: var(--talign, left);
+      }
+      .goal .title {
+        font-weight: 800;
+        font-size: 20px;
+        text-transform: uppercase;
+      }
+      .goal .count {
+        font-size: 38px;
+        font-weight: 800;
+        margin: 10px 0 12px;
+        color: var(--muted);
+        line-height: 1.15;
+      }
+      .goal .count b {
+        color: var(--fg);
+      }
+      .bar {
+        height: 20px;
+        border-radius: 10px;
+        background: var(--track);
+        overflow: hidden;
+        border: var(--stroke) solid var(--card-border);
+      }
+      .bar > i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--accent);
+        border-radius: 8px;
+        transition: width 0.6s ease;
+      }
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body data-overlay="milestone">
+    <div class="card goal hidden" id="goal">
+      <div class="title" id="gtitle"></div>
+      <div class="count">
+        <b id="cur">0</b>
+        /
+        <span id="tgt">0</span>
+        <span id="unit">Member</span>
+      </div>
+      <div class="bar"><i id="fill"></i></div>
+      <div class="meta">
+        <span id="remain"></span>
+        <span id="bonus"></span>
+      </div>
+    </div>
+    <script src="/static/common.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      Sub.on("state", (st) => {
+        const g = st.goals.find((x) => x.id === st.current_goal_id);
+        const unit = st.settings.unit_label || "Member";
+        $("unit").textContent = unit;
+        $("goal").classList.toggle("hidden", !st.goals.length); // belum ada goal = overlay kosong
+        if (!g) {
+          if (st.goals.length) {
+            $("gtitle").textContent = "SEMUA GOAL TERCAPAI";
+            $("cur").textContent = Sub.num(st.counter);
+            $("tgt").textContent = Sub.num(st.counter);
+            $("fill").style.width = "100%";
+            $("remain").textContent = "";
+            $("bonus").textContent = "";
+          }
+          return;
+        }
+        $("gtitle").textContent = g.text;
+        $("cur").textContent = Sub.num(st.counter);
+        $("tgt").textContent = Sub.num(g.target);
+        $("fill").style.width = Math.min(100, (st.counter / g.target) * 100) + "%";
+        $("remain").textContent =
+          `${Sub.num(Math.max(0, g.target - st.counter))} ${unit.toLowerCase()} lagi untuk mencapai target`;
+        $("bonus").textContent = g.bonus_minutes > 0 ? `Bonus +${g.bonus_minutes} menit` : "";
+      });
+      Sub.start();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Ticker</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      body {
+        padding: 6px;
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+        border-radius: var(--radius-sm);
+        padding: 8px 0 8px 10px;
+      }
+      .bar .logo {
+        flex: none;
+        width: 44px;
+        height: 44px;
+      }
+      .clip {
+        flex: 1;
+        overflow: hidden;
+      }
+      .track {
+        display: inline-block;
+        padding-left: 100%;
+        animation: scroll var(--dur, 30s) linear infinite;
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .track span {
+        margin-right: 56px;
+      }
+      .track b {
+        color: var(--accent);
+      }
+      @keyframes scroll {
+        to {
+          transform: translateX(-100%);
+        }
+      }
+    </style>
+  </head>
+  <body data-overlay="ticker">
+    <div class="card bar shadow">
+      <img class="logo" id="logo" alt="" width="44" height="44" src="/static/brand/logo-mark-dark.svg" />
+      <div class="clip"><div class="track" id="track"></div></div>
+    </div>
+    <script src="/static/common.js"></script>
+    <script>
+      const track = document.getElementById("track");
+      let last = "";
+      Sub.on("state", (st) => {
+        // logo mark varian dark untuk kartu gelap, varian biasa untuk tema light
+        document.getElementById("logo").src =
+          `/static/brand/logo-mark${st.settings.theme === "light" ? "" : "-dark"}.svg`;
+        const items = [];
+        st.latest_members
+          .slice(0, 10)
+          .forEach((e) =>
+            items.push(["Member baru: ", e.author || "Anonim", e.kind === "gift" ? ` (gift ${e.units})` : ""]),
+          );
+        if (st.top_gifters.length) {
+          items.push([
+            "Top gifter: ",
+            st.top_gifters.map((g, i) => `${i + 1}. ${g.author} (${g.total})`).join("  "),
+            "",
+          ]);
+        }
+        const key = JSON.stringify(items);
+        if (key === last) return;
+        last = key;
+        track.replaceChildren();
+        items.forEach(([a, b, c]) => {
+          const s = Sub.el("span");
+          s.append(a, Sub.el("b", "", b), c);
+          track.append(s);
+        });
+        document.documentElement.style.setProperty("--dur", Math.max(20, items.length * 5) + "s");
+      });
+      Sub.start();
+    </script>
+  </body>
+</html>

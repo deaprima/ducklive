@@ -1,0 +1,70 @@
+name: build
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements-dev.txt
+      - name: Lint Python
+        run: |
+          ruff check .
+          ruff format --check .
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Format web (prettier)
+        run: npx --yes prettier@3 --check "web/**/*.{html,js,css}"
+      - run: python -m pytest -q
+
+  windows-installer:
+    # Installer hanya dibuat saat rilis (tag vX.Y.Z) atau dijalankan manual.
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write # untuk membuat GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r requirements.txt pyinstaller
+      - name: Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Bahasa Indonesia untuk installer (opsional; tanpa ini wizard berbahasa Inggris)
+        shell: pwsh
+        continue-on-error: true
+        run: Invoke-WebRequest https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/Indonesian.isl -OutFile installer/Indonesian.isl
+      - name: Build
+        shell: pwsh
+        run: |
+          $v = if ("${{ github.ref_type }}" -eq "tag") { "${{ github.ref_name }}".TrimStart("v") } else { "0.0.0-dev" }
+          python tools/build.py $v
+      - name: Checksum
+        shell: pwsh
+        run: |
+          Get-ChildItem dist\* -File -Include *.exe, *.zip | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash)  $($_.Name)"
+          } | Out-File dist/SHA256SUMS.txt -Encoding ascii
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/DuckLive-Setup-*.exe
+            dist/DuckLive-Portable-*.zip
+            dist/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DuckLive
+          path: |
+            dist/DuckLive-Setup-*.exe
+            dist/DuckLive-Portable-*.zip
+            dist/SHA256SUMS.txt

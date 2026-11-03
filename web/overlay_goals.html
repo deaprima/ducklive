@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Goals</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      body {
+        padding: 16px;
+      }
+      .head {
+        text-align: var(--talign, center);
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      .prog {
+        display: inline-block;
+        font-weight: 800;
+        font-size: 18px;
+        margin: 6px 0 10px;
+        padding: 0 12px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: var(--ink);
+        border: var(--stroke) solid var(--ink);
+      }
+      .progwrap {
+        text-align: var(--talign, center);
+      }
+      .item {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        font-size: 22px;
+        font-weight: 600;
+        margin: 10px 0;
+      }
+      .box {
+        flex: none;
+        width: 24px;
+        height: 24px;
+        margin-top: 4px;
+        border: 3px solid var(--muted);
+        border-radius: 7px;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .item.done {
+        color: var(--done);
+      }
+      .item.done .box {
+        background: var(--done-box);
+        border-color: var(--done-box);
+      }
+      /* tanda centang digambar dengan CSS */
+      .item.done .box::after {
+        content: "";
+        width: 6px;
+        height: 11px;
+        margin-top: -3px;
+        border: solid var(--white);
+        border-width: 0 3px 3px 0;
+        transform: rotate(45deg);
+      }
+      .foot {
+        text-align: var(--talign, center);
+        font-size: 28px;
+        font-weight: 800;
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body data-overlay="goals">
+    <div class="card">
+      <div class="head shadow" id="title"></div>
+      <div class="progwrap"><span class="prog" id="prog"></span></div>
+      <div id="list"></div>
+      <div class="foot shadow" id="rule"></div>
+    </div>
+    <script src="/static/common.js"></script>
+    <script>
+      const $ = (id) => document.getElementById(id);
+      Sub.on("state", (st) => {
+        $("title").textContent = st.settings.goals_title;
+        const done = st.goals.filter((g) => g.done).length;
+        $("prog").textContent = `${done}/${st.goals.length}`;
+        $("rule").textContent = st.rule_text;
+        const list = $("list");
+        list.replaceChildren();
+        st.goals.forEach((g) => {
+          const row = Sub.el("div", "item shadow" + (g.done ? " done" : ""));
+          row.append(
+            Sub.el("div", "box"),
+            Sub.el("div", "", `${Sub.num(g.target)} ${st.settings.unit_label || "Member"} | ${g.text}`),
+          );
+          list.append(row);
+        });
+      });
+      Sub.start();
+    </script>
+  </body>
+</html>

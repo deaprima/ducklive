@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Build
+dist/
+build/
+*.spec
+installer/Indonesian.isl
+
+# Data & rahasia user (jangan pernah di-commit)
+.env
+data/
+*.db
+*.log
+admin_token.txt
+client_secret*.json
+token*.json
+google_token.json
+
+# Tools
+node_modules/
