@@ -28,6 +28,7 @@ from .sources.scrape import ScrapeSource
 WEB = resource_dir() / "web"
 APP_ID = "ducklive"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]"}
+MIN_TOKEN_LEN = 16
 
 
 def host_only(netloc: str) -> str:
@@ -71,13 +72,18 @@ def load_admin_token() -> str:
         return env
     p = data_dir() / "admin_token.txt"
     if p.exists():
-        return p.read_text().strip()
+        stored = p.read_text().strip()
+        # File kosong/rusak (mis. tulis pertama terputus) tidak boleh jadi token: buat ulang.
+        if len(stored) >= MIN_TOKEN_LEN:
+            return stored
     token = secrets.token_urlsafe(24)
-    p.write_text(token)
+    tmp = p.with_name(p.name + ".tmp")
+    tmp.write_text(token)
     try:
-        os.chmod(p, 0o600)
+        os.chmod(tmp, 0o600)
     except OSError:
         pass
+    os.replace(tmp, p)  # atomik: file token tidak pernah terlihat setengah tertulis
     return token
 
 
@@ -150,6 +156,14 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
         if not host_allowed(request.headers.get("host", "")):
             return PlainTextResponse("Host tidak diizinkan", status_code=400)
         response = await call_next(request)
+        # Anti-clickjacking: situs lain tidak boleh membingkai admin. Overlay tetap boleh
+        # dibingkai oleh DuckLive sendiri (preview di admin); OBS memuatnya sebagai halaman utama.
+        if request.url.path.startswith("/overlay/"):
+            response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
+            response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        else:
+            response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+            response.headers["X-Frame-Options"] = "DENY"
         if request.url.path.startswith("/static/"):
             # Tanpa ini browser OBS bisa terus memakai CSS/JS lama setelah aplikasi diperbarui.
             response.headers["Cache-Control"] = "no-cache"
@@ -160,7 +174,7 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
         return JSONResponse({"detail": str(exc)}, status_code=400)
 
     def auth(x_admin_token: str = Header(default="")):
-        if not secrets.compare_digest(x_admin_token, token):
+        if not token or not x_admin_token or not secrets.compare_digest(x_admin_token.encode(), token.encode()):
             raise HTTPException(401, "token admin salah")
 
     admin_only = [Depends(auth)]

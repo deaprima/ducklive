@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app import __version__
+from app import __version__, main
 from app.main import create_app
 
 TOKEN = "t0ken"
@@ -144,3 +144,37 @@ def test_style_settings_reach_overlay_state(tmp_path):
         )
         s = c.get("/api/state").json()["settings"]
         assert s["overlay_scale"] == 130 and s["overlay_styles"] == {"goals": {"theme": "transparent"}}
+
+
+@pytest.mark.parametrize("content", ["", "   \n", "pendek"])
+def test_empty_or_short_token_file_is_regenerated(tmp_path, monkeypatch, content):
+    # File token kosong tidak boleh membuat semua route admin terbuka tanpa token
+    monkeypatch.delenv("DUCKLIVE_TOKEN", raising=False)
+    monkeypatch.setattr(main, "data_dir", lambda: tmp_path)
+    (tmp_path / "admin_token.txt").write_text(content)
+    token = main.load_admin_token()
+    assert len(token) >= main.MIN_TOKEN_LEN
+    assert (tmp_path / "admin_token.txt").read_text() == token
+    c = TestClient(create_app(db_file=tmp_path / "a.db"), base_url="http://127.0.0.1:8765")
+    with c:
+        assert c.post("/api/control/pause").status_code == 401
+        assert c.post("/api/control/pause", headers={"X-Admin-Token": ""}).status_code == 401
+        assert c.post("/api/control/pause", headers={"X-Admin-Token": token}).status_code == 200
+
+
+def test_empty_server_token_never_authenticates(tmp_path):
+    c = TestClient(create_app(db_file=tmp_path / "a.db", admin_token=""), base_url="http://127.0.0.1:8765")
+    with c:
+        # admin_token="" jatuh ke load_admin_token(), jadi tetap ada token acak
+        assert c.post("/api/control/pause").status_code == 401
+
+
+def test_admin_cannot_be_framed_but_overlay_preview_can(tmp_path):
+    c, h = make(tmp_path)
+    with c:
+        r = c.get("/admin")
+        assert r.headers["x-frame-options"] == "DENY"
+        assert "frame-ancestors 'none'" in r.headers["content-security-policy"]
+        r = c.get("/overlay/timer")
+        assert r.headers["x-frame-options"] == "SAMEORIGIN"
+        assert "frame-ancestors 'self'" in r.headers["content-security-policy"]

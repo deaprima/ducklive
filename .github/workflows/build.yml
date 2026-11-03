@@ -34,6 +34,8 @@ jobs:
       contents: write # untuk membuat GitHub Release
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false # token tidak perlu tertinggal di .git/config selama build
       - uses: actions/setup-python@v6
         with: { python-version: "3.12" }
       - run: pip install -r requirements.txt pyinstaller
@@ -53,7 +55,8 @@ jobs:
           Get-ChildItem dist\* -File -Include *.exe, *.zip | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash)  $($_.Name)"
           } | Out-File dist/SHA256SUMS.txt -Encoding ascii
-      - uses: softprops/action-gh-release@v3
+      # Action pihak ketiga dikunci ke SHA commit (v3.0.3): tag bisa dipindah, SHA tidak.
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
