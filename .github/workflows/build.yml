@@ -21,8 +21,8 @@ jobs:
           ruff format --check .
       - uses: actions/setup-node@v6
         with: { node-version: "22" }
-      - name: Format web (prettier)
-        run: npx --yes prettier@3 --check "web/**/*.{html,js,css}"
+      - name: Format web dan landing page (prettier)
+        run: npx --yes prettier@3 --check "{web,docs}/**/*.{html,js,css}"
       - run: python -m pytest -q
 
   windows-installer:

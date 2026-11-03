@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DuckLive – Timer subathon untuk live YouTube</title>
+    <meta
+      name="description"
+      content="DuckLive menghitung member dan gift dari live YouTube, menambah timer otomatis, lalu menampilkan goal lewat overlay OBS. Gratis, open source, berjalan lokal."
+    />
+    <meta name="theme-color" content="#fffbf2" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="DuckLive – Timer subathon untuk live YouTube" />
+    <meta
+      property="og:description"
+      content="Setiap member baru, waktu live bertambah. Timer, goal, dan overlay OBS untuk subathon. Gratis dan open source."
+    />
+    <meta property="og:image" content="https://deaprima.github.io/ducklive/screenshots/admin.png" />
+    <link rel="icon" href="assets/img/logo-48.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/landing.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="nav">
+        <a class="lockup" href="./" aria-label="DuckLive">
+          <img src="assets/img/logo-48.svg" alt="" width="48" height="48" />
+          <span class="wordmark">Duck<span>Live</span></span>
+        </a>
+        <a class="nav-link" href="#fitur">Fitur</a>
+        <a class="nav-link" href="#cara-pakai">Cara pakai</a>
+        <a class="nav-link" href="https://github.com/deaprima/ducklive">Sumber</a>
+        <a class="btn btn-primary btn-sm" href="https://github.com/deaprima/ducklive/releases/latest">Unduh .exe</a>
+      </header>
+
+      <main class="hero">
+        <img src="assets/img/mascot-happy-170.svg" alt="" width="170" height="170" />
+        <span class="pill">
+          <img src="assets/img/dot-green.svg" alt="" width="10" height="10" />
+          Open source · berjalan lokal di komputermu
+        </span>
+        <h1>Setiap member baru, waktu live bertambah.</h1>
+        <p class="lead muted">
+          DuckLive menghitung member dan gift dari live YouTube, menambah timer otomatis, lalu menampilkan goal lewat
+          overlay OBS. Tanpa server, tanpa langganan.
+        </p>
+        <div class="btn-row">
+          <a class="btn btn-primary" href="https://github.com/deaprima/ducklive/releases/latest">Unduh untuk Windows</a>
+          <a class="btn" href="https://github.com/deaprima/ducklive">Lihat di GitHub</a>
+        </div>
+        <p class="note muted">Gratis · lisensi MIT · versi Windows (.exe)</p>
+      </main>
+
+      <section class="preview" role="img" aria-label="Contoh overlay DuckLive di OBS: timer dan daftar goal">
+        <div class="ov ov-timer" aria-hidden="true">
+          <div class="digits-row">
+            <div class="digits">
+              <div class="unit"><span class="digit" id="h">81</span><small>JAM</small></div>
+              <span class="sep">:</span>
+              <div class="unit"><span class="digit" id="m">43</span><small>MENIT</small></div>
+              <span class="sep">:</span>
+              <div class="unit"><span class="digit" id="s">06</span><small>DETIK</small></div>
+            </div>
+            <img class="mascot" src="assets/img/mascot-normal-104.svg" alt="" width="104" height="104" />
+          </div>
+          <div class="divider"></div>
+          <p class="ov-title">KUNJUNGAN PANTI ASUHAN</p>
+          <div class="count"><b>1.088</b><span>/ 2.000 Member</span></div>
+          <div class="progress"><i style="width: 54.4%"></i></div>
+          <div class="meta">
+            <p class="muted">912 member lagi untuk mencapai target</p>
+            <span class="chip">Bonus +0 mnt</span>
+          </div>
+        </div>
+
+        <div class="ov ov-goals" aria-hidden="true">
+          <div class="goals-head">
+            <h3>IMPACTHON</h3>
+            <span>1/5</span>
+          </div>
+          <div class="goal done"><span class="box"></span>1.000 Member | Kasih bonus ke 5 guru honorer</div>
+          <div class="goal"><span class="box"></span>2.000 Member | Kunjungan panti asuhan</div>
+          <div class="goal"><span class="box"></span>3.500 Member | Misi kejutan</div>
+          <div class="goal"><span class="box"></span>5.000 Member | Bikin lagu rap kritikan</div>
+          <div class="goal"><span class="box"></span>10.000 Member | KKN pendidikan (anak/guru)</div>
+          <div class="rule">1 Membership = 3 Menit</div>
+        </div>
+      </section>
+
+      <section id="fitur">
+        <h2 class="section-title">Sederhana, tapi lengkap</h2>
+        <div class="grid-3">
+          <article class="card">
+            <img src="assets/img/mascot-happy-84.svg" alt="" width="84" height="84" />
+            <h3>Otomatis dari chat live</h3>
+            <p class="muted">Member baru, gift, dan Super Chat terhitung langsung. Gift ×5 dihitung 5, bukan 1.</p>
+          </article>
+          <article class="card">
+            <img src="assets/img/mascot-celebrate-84.svg" alt="" width="84" height="84" />
+            <h3>Goal dan overlay siap OBS</h3>
+            <p class="muted">Daftar goal dengan centang otomatis, timer, alert, dan ticker. Tinggal tempel URL.</p>
+          </article>
+          <article class="card">
+            <img src="assets/img/mascot-normal-84.svg" alt="" width="84" height="84" />
+            <h3>Lokal dan terkontrol</h3>
+            <p class="muted">Berjalan di komputermu dengan token admin. Ada batas maksimum timer, undo, dan backup.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="cara-pakai">
+        <h2 class="section-title">Mulai dalam 3 langkah</h2>
+        <ol class="grid-3 steps">
+          <li class="step">
+            <span class="num">1</span>
+            <h3>Unduh dan jalankan</h3>
+            <p class="muted">Buka DuckLive.exe. Halaman Admin terbuka otomatis di browser.</p>
+          </li>
+          <li class="step">
+            <span class="num">2</span>
+            <h3>Tempel URL live</h3>
+            <p class="muted">Pilih sumber (scrape atau API resmi), tempel URL, lalu klik Sambungkan.</p>
+          </li>
+          <li class="step">
+            <span class="num">3</span>
+            <h3>Pasang di OBS</h3>
+            <p class="muted">Tambah Browser Source dengan URL overlay, lalu klik Mulai.</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="cta">
+        <div class="cta-text">
+          <h2>Siap mulai subathon?</h2>
+          <p class="muted">Gratis dan open source. Coba dulu dengan tombol tes event tanpa perlu live.</p>
+          <div class="btn-row">
+            <a class="btn btn-primary" href="https://github.com/deaprima/ducklive/releases/latest">Unduh DuckLive</a>
+            <a class="btn" href="https://github.com/deaprima/ducklive#readme">Baca dokumentasi</a>
+          </div>
+        </div>
+        <img class="mascot" src="assets/img/mascot-celebrate-200.svg" alt="" width="200" height="200" />
+      </section>
+
+      <footer class="footer">
+        <div class="footer-row">
+          <a class="lockup" href="./" aria-label="DuckLive">
+            <img src="assets/img/logo-32.svg" alt="" width="32" height="32" />
+            <span class="wordmark">Duck<span>Live</span></span>
+          </a>
+          <a class="footer-link" href="https://github.com/deaprima/ducklive/blob/HEAD/LICENSE">Lisensi MIT</a>
+          <a class="footer-link" href="https://github.com/deaprima/ducklive">GitHub</a>
+          <a class="footer-link" href="https://github.com/deaprima/ducklive#readme">Dokumentasi</a>
+        </div>
+        <p class="disclaimer">
+          Mode scrape tidak resmi dan bisa berhenti bekerja jika YouTube mengubah sistemnya. Mode API resmi tersedia
+          sebagai alternatif.
+        </p>
+      </footer>
+    </div>
+
+    <script>
+      // Timer contoh di preview ikut berjalan mundur.
+      (function () {
+        let left = 81 * 3600 + 43 * 60 + 6;
+        const pad = (n) => String(n).padStart(2, "0");
+        const el = (id) => document.getElementById(id);
+        setInterval(() => {
+          left = Math.max(0, left - 1);
+          el("h").textContent = pad(Math.floor(left / 3600));
+          el("m").textContent = pad(Math.floor((left % 3600) / 60));
+          el("s").textContent = pad(left % 60);
+        }, 1000);
+      })();
+    </script>
+  </body>
+</html>

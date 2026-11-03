@@ -1,0 +1,558 @@
+/* Landing page DuckLive. Token dan gaya tombol sama dengan halaman Admin (web/admin.html). */
+@font-face {
+  font-family: "Poppins";
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/Poppins-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/Poppins-Medium.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/Poppins-SemiBold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/Poppins-Bold.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Poppins";
+  font-weight: 800;
+  font-display: swap;
+  src: url("fonts/Poppins-ExtraBold.ttf") format("truetype");
+}
+
+:root {
+  --ink: #1c1a17;
+  --paper: #fffbf2;
+  --white: #ffffff;
+  --orange: #f4a93c;
+  --orange-soft: #fdebcb;
+  --green: #4e9b70;
+  --green-soft: #dff0e5;
+  --line: #e7e0d2;
+  --muted: #6f685c;
+  --font: Poppins, system-ui, sans-serif;
+  --gutter: clamp(20px, 8.3vw, 120px);
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.5 var(--font);
+}
+img {
+  display: block;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 3px;
+}
+
+.page {
+  max-width: calc(1200px + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 32px var(--gutter) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 96px;
+}
+section {
+  scroll-margin-top: 24px;
+}
+.muted {
+  color: var(--muted);
+}
+
+/* Tombol: sama dengan Admin (garis 2px, bayangan tegas, efek ditekan) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 28px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--white);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition:
+    transform 0.06s,
+    box-shadow 0.06s,
+    background 0.12s;
+}
+.btn:hover {
+  background: #fbf5e8;
+}
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.btn-primary {
+  background: var(--orange);
+}
+.btn-primary:hover {
+  background: #f7b95c;
+}
+.btn-sm {
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+.lockup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+.wordmark {
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.5;
+}
+.wordmark span {
+  color: var(--green);
+}
+.nav-link {
+  font-weight: 500;
+}
+.nav-link:hover {
+  color: var(--green);
+}
+
+/* Hero */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px 7px 14px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--green-soft);
+  font-size: 14px;
+  font-weight: 600;
+}
+.hero h1 {
+  max-width: 880px;
+  font-size: clamp(38px, 3.4vw + 16px, 64px);
+  font-weight: 800;
+  line-height: 1.5;
+}
+.hero .lead {
+  max-width: 720px;
+  font-size: clamp(17px, 0.6vw + 13px, 20px);
+}
+.hero .btn-row {
+  justify-content: center;
+}
+.hero .note {
+  font-size: 14px;
+}
+
+/* Preview produk: tiruan overlay Timer dan Daftar goal */
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 30px;
+  border: 3px solid var(--ink);
+  border-radius: 28px;
+  background: var(--orange-soft);
+}
+.ov {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 24px;
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  background: var(--white);
+}
+.ov-timer {
+  width: 580px;
+}
+.ov-goals {
+  width: 520px;
+}
+.digits-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.digits {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.digit,
+.sep {
+  font-size: 76px;
+  font-weight: 800;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.unit small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.divider {
+  height: 2px;
+  background: var(--line);
+}
+.ov-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.count {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  white-space: nowrap;
+}
+.count b {
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.count span {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.progress {
+  height: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: var(--line);
+  overflow: hidden;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+}
+.meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+}
+.meta p {
+  flex: 1;
+}
+.chip {
+  padding: 4px 10px;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: var(--orange-soft);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.goals-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.goals-head h3 {
+  flex: 1;
+  font-size: 28px;
+  font-weight: 800;
+}
+.goals-head span {
+  padding: 5px 14px;
+  border-radius: 99px;
+  background: var(--ink);
+  color: var(--white);
+  font-size: 15px;
+  font-weight: 700;
+}
+.goal {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 19px;
+  font-weight: 600;
+}
+.box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: 1px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--white);
+}
+.goal.done {
+  color: var(--green);
+}
+.goal.done .box {
+  background: var(--green);
+}
+/* tanda centang digambar dengan CSS */
+.goal.done .box::after {
+  content: "";
+  width: 6px;
+  height: 11px;
+  margin-top: -3px;
+  border: solid var(--white);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+.rule {
+  padding: 12px 16px;
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--orange-soft);
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Fitur dan langkah */
+.section-title {
+  margin-bottom: 32px;
+  font-size: clamp(28px, 1.4vw + 18px, 36px);
+  font-weight: 700;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 28px 28px 32px;
+  border: 2px solid var(--ink);
+  border-radius: 22px;
+  background: var(--white);
+}
+.card h3,
+.step h3 {
+  font-size: 22px;
+  font-weight: 700;
+}
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.num {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--ink);
+  border-radius: 24px;
+  background: var(--orange);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* CTA */
+.cta {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 44px 56px;
+  border: 3px solid var(--ink);
+  border-radius: 28px;
+  background: var(--orange-soft);
+}
+.cta-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cta h2 {
+  font-size: clamp(30px, 1.6vw + 18px, 40px);
+  font-weight: 800;
+}
+.cta p {
+  font-size: 18px;
+}
+.cta .mascot {
+  flex: none;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 2px solid var(--line);
+}
+.footer-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.footer .lockup {
+  gap: 8px;
+}
+.footer .wordmark {
+  font-size: 18px;
+}
+.footer-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.footer-link:hover {
+  color: var(--ink);
+}
+.disclaimer {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Layar lebih kecil dari desain (1440px) */
+@media (max-width: 1240px) {
+  .preview {
+    flex-wrap: wrap;
+  }
+  .ov-timer,
+  .ov-goals {
+    width: min(580px, 100%);
+  }
+}
+@media (max-width: 860px) {
+  .page {
+    gap: 72px;
+  }
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .cta {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    padding: 32px 28px;
+  }
+  .cta .mascot {
+    width: 120px;
+    height: 120px;
+  }
+}
+@media (max-width: 720px) {
+  .nav {
+    gap: 16px;
+  }
+  .nav-link {
+    display: none;
+  }
+  .preview {
+    padding: 16px;
+    border-radius: 22px;
+  }
+  .ov {
+    padding: 18px;
+  }
+  .digit,
+  .sep {
+    font-size: clamp(36px, 11vw, 76px);
+  }
+  .ov-timer .mascot {
+    width: 64px;
+    height: 64px;
+  }
+  .count b {
+    font-size: 30px;
+  }
+  .count span {
+    font-size: 17px;
+  }
+  .goals-head h3 {
+    font-size: 22px;
+  }
+  .goal {
+    font-size: 16px;
+  }
+  .rule {
+    font-size: 18px;
+  }
+  .footer-row {
+    flex-wrap: wrap;
+    gap: 12px 20px;
+  }
+  .footer .lockup {
+    flex-basis: 100%;
+  }
+}
+@media (max-width: 480px) {
+  /* digit timer + maskot tidak muat berdampingan */
+  .ov-timer .mascot {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

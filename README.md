@@ -120,6 +120,7 @@ web/
   admin.html       Halaman Admin
   overlay_*.html   Overlay OBS
   static/          CSS/JS bersama, font Poppins, logo dan maskot
+docs/              Landing page statis (GitHub Pages) dan screenshot README
 tests/             pytest
 tools/build.py     Build PyInstaller + installer Inno Setup + zip portable
 installer/         Skrip Inno Setup
@@ -132,23 +133,6 @@ installer/         Skrip Inno Setup
 - Tanpa framework atau langkah build untuk web: HTML, CSS, dan JavaScript biasa.
 
 CI menjalankan lint, cek format, dan tes di setiap push dan pull request.
-
-### Build dan rilis
-
-```bash
-pip install -r requirements.txt pyinstaller
-python tools/build.py           # dist/DuckLive-Setup-<versi>.exe + dist/DuckLive-Portable-<versi>.zip
-```
-
-Versi diambil dari `__version__` di [app/__init__.py](app/__init__.py) dan dipakai untuk nama file, info versi Windows pada `.exe`, daftar aplikasi Windows, dan tab Bantuan di Admin. Installer butuh [Inno Setup 6+](https://jrsoftware.org/isdl.php); tanpa itu hanya zip portable yang dibuat.
-
-Cara rilis:
-
-1. Naikkan `__version__` di `app/__init__.py` (mis. `0.2.0`), commit, dan push.
-2. Buat tag yang sama: `git tag v0.2.0` lalu `git push origin v0.2.0`.
-3. GitHub Actions menjalankan tes, lalu mengunggah installer, zip portable, dan `SHA256SUMS.txt` ke Releases. Build gagal jika tag berbeda dengan `__version__`.
-
-Build manual dari tab Actions (Run workflow) diberi versi `<versi>-dev` dan hanya tersedia sebagai artifact.
 
 ## Status pengujian
 
