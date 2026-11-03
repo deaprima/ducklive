@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <title>DuckLive · Live chat</title>
+    <link rel="icon" href="/static/brand/logo-mark.svg" />
+    <link rel="stylesheet" href="/static/common.css" />
+    <style>
+      /* Pesan terbaru di bawah; yang lama terdorong ke atas lalu dibuang. */
+      body {
+        height: calc(100vh / var(--scale, 1));
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 16px;
+      }
+      #list {
+        display: flex;
+        flex-direction: column;
+        /* perataan menggeser posisi kartu; teks di dalam kartu selalu rata kiri agar mudah dibaca */
+        align-items: var(--justify, flex-start);
+        /* menempel di bawah: jika lebih tinggi dari layar, yang terpotong chat lama di atas, bukan yang terbaru */
+        justify-content: flex-end;
+        gap: 8px;
+        width: 100%;
+        min-width: 0;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .msg {
+        flex: none;
+        width: fit-content;
+        max-width: 100%;
+        min-width: 0;
+        padding: 8px 14px;
+        border-radius: var(--radius-sm);
+        font-size: 22px;
+        line-height: 1.35;
+        text-align: left;
+        overflow-wrap: anywhere;
+        animation: in 0.25s ease-out;
+      }
+      .msg.out {
+        animation: out 0.3s ease-in forwards;
+      }
+      /* Warna nama mengikuti kebiasaan chat YouTube: member hijau, moderator biru, host disorot. */
+      body {
+        /* warna nama seperti chat YouTube: abu-abu penonton, hijau member, biru moderator */
+        --c-viewer: #aaaaaa;
+        --c-member: #2ba640;
+        --c-mod: #5e84f1;
+      }
+      body[data-theme="light"] {
+        --c-viewer: #606060;
+        --c-member: #107516;
+        --c-mod: #2c5bd6;
+      }
+      .msg {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .avatar {
+        flex: none;
+        width: 1.45em;
+        height: 1.45em;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--track);
+      }
+      .body {
+        min-width: 0;
+      }
+      .who {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-right: 8px;
+        vertical-align: top;
+      }
+      .name {
+        font-weight: 700;
+        color: var(--c-viewer);
+      }
+      .role-member .name {
+        color: var(--c-member);
+      }
+      .role-moderator .name {
+        color: var(--c-mod);
+      }
+      .role-owner .name {
+        padding: 0 8px;
+        border-radius: 6px;
+        background: var(--accent);
+        color: var(--ink);
+        text-shadow: none;
+      }
+      .ico {
+        width: 0.85em;
+        height: 0.85em;
+        flex: none;
+      }
+      .role-moderator .ico {
+        fill: var(--c-mod);
+      }
+      .ico.verified {
+        fill: var(--muted);
+      }
+      .badge {
+        height: 0.9em;
+        width: auto;
+        flex: none;
+      }
+      .emoji {
+        height: 1.3em;
+        width: auto;
+        vertical-align: -0.3em;
+      }
+      /* Super Chat, member, dan gift: garis aksen dan judul kecil */
+      .msg.hl {
+        border-color: var(--accent);
+        border-width: 3px;
+      }
+      .head {
+        font-size: 15px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      @keyframes in {
+        from {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+      @keyframes out {
+        to {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body data-overlay="chat">
+    <div id="list"></div>
+    <script src="/static/common.js"></script>
+    <script>
+      const list = document.getElementById("list");
+      const IMAGE_HOSTS = ["https://yt3.ggpht.com/", "https://yt4.ggpht.com/", "https://yt3.googleusercontent.com/"];
+      // ikon digambar sendiri (bukan emoji): perisai moderator dan centang terverifikasi
+      const ICONS = {
+        moderator: "M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z",
+        verified: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-1.2 14.2-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4-7 7Z",
+      };
+      const HEAD = { superchat: "Super Chat", member: "Member", gift: "Gift membership" };
+      const LINK =
+        /\b(?:https?:\/\/|www\.)\S+|\b[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|id|io|gg|co|me|ly|xyz|tv|link)\b(?:\/\S*)?/gi;
+      let opts = { max: 8, hideLinks: true, showOwner: false, avatars: true };
+
+      Sub.on("state", (st) => {
+        const s = st.settings;
+        opts = {
+          max: s.chat_max_items || 8,
+          hideLinks: s.chat_hide_links !== false,
+          showOwner: !!s.chat_show_owner,
+          avatars: s.chat_show_avatars !== false,
+        };
+        trim();
+      });
+
+      // Buang chat terlama jika melebihi "Jumlah chat di layar". Chat yang tidak muat di atas disembunyikan
+      // (bukan dihapus) agar tidak ada kartu setengah terpotong; dihitung ulang saat font/gambar/ukuran berubah.
+      function trim() {
+        while (list.children.length > opts.max) list.firstElementChild.remove();
+        fit();
+      }
+      function fit() {
+        const top = list.getBoundingClientRect().top;
+        for (const el of list.children) el.style.visibility = el.getBoundingClientRect().top < top - 1 ? "hidden" : "";
+      }
+      addEventListener("resize", fit);
+      document.fonts.ready.then(fit);
+      function remove(el) {
+        if (!el.isConnected || el.classList.contains("out")) return;
+        el.classList.add("out");
+        setTimeout(() => {
+          el.remove();
+          fit(); // chat lama yang tadi tersembunyi bisa muat lagi
+        }, 320);
+      }
+      const safeImg = (url) => typeof url === "string" && IMAGE_HOSTS.some((h) => url.startsWith(h));
+      function image(cls, url, alt = "") {
+        const img = Sub.el("img", cls);
+        img.alt = alt;
+        img.referrerPolicy = "no-referrer";
+        img.onerror = () => img.remove(); // jangan tampilkan ikon gambar rusak di siaran
+        img.onload = fit; // tinggi kartu bisa bertambah setelah gambar dimuat
+        img.src = url;
+        return img;
+      }
+      function icon(name) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        svg.setAttribute("class", "ico " + name);
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", ICONS[name]);
+        svg.append(path);
+        return svg;
+      }
+      function text(t) {
+        return opts.hideLinks ? t.replace(LINK, "[link]") : t;
+      }
+
+      // Semua isi dari chat ditulis lewat textContent / atribut, tidak pernah sebagai HTML.
+      function render(item) {
+        if (!item || !item.id || list.querySelector(`[data-id="${CSS.escape(item.id)}"]`)) return;
+        // chat biasa dari host (akun channel sendiri) disembunyikan kecuali diaktifkan; Super Chat dsb. tetap tampil
+        if (item.kind === "text" && item.role === "owner" && !opts.showOwner) return;
+        const hl = item.kind !== "text";
+        const el = Sub.el("div", "card msg shadow" + (hl ? " hl" : ""));
+        el.dataset.id = item.id;
+        el.dataset.channel = item.channel || "";
+        if (opts.avatars && safeImg(item.avatar)) el.append(image("avatar", item.avatar));
+        const body = Sub.el("div", "body");
+        if (HEAD[item.kind]) {
+          const head = item.kind === "superchat" && item.amount ? `${HEAD.superchat} ${item.amount}` : HEAD[item.kind];
+          body.append(Sub.el("div", "head", head));
+        }
+        const line = Sub.el("div");
+        const who = Sub.el("span", "who role-" + (item.role || "viewer"));
+        who.append(Sub.el("span", "name", item.author || "Penonton"));
+        if (ICONS[item.role]) who.append(icon(item.role));
+        if (safeImg(item.badge)) who.append(image("badge", item.badge, "member"));
+        line.append(who);
+        (item.parts || []).forEach((p) => {
+          if (p.t) line.append(text(p.t));
+          else if (safeImg(p.img)) line.append(image("emoji", p.img, p.alt || ""));
+        });
+        body.append(line);
+        el.append(body);
+        list.append(el);
+        trim();
+      }
+
+      Sub.on("chat", (m) => render(m.item));
+      Sub.on("chat_history", (m) => {
+        list.querySelectorAll(".msg:not([data-id^='pv-'])").forEach((el) => el.remove());
+        (m.items || []).forEach(render);
+      });
+      Sub.on("chat_delete", (m) => {
+        list.querySelectorAll(".msg").forEach((el) => {
+          if ((m.id && el.dataset.id === m.id) || (m.channel && el.dataset.channel === m.channel)) remove(el);
+        });
+      });
+      Sub.start();
+    </script>
+  </body>
+</html>

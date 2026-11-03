@@ -12,6 +12,7 @@ class Source:
 
     emit(ext_id, kind, author, units=1, amount=None, currency=None)
       kind: "member" | "gift" | "superchat"
+    chat(op): pesan live chat untuk overlay chat (opsional, lihat sources/chat.py); dipanggil lewat forward_chat
 
     Error biasa (jaringan putus, server YouTube error) -> otomatis disambung ulang dengan jeda
     yang makin panjang. FatalSourceError atau run() yang selesai normal -> berhenti.
@@ -20,8 +21,10 @@ class Source:
     name = "base"
     RETRY_DELAYS = (5, 10, 20, 40, 60)
 
-    def __init__(self, emit, settings_getter, notify=None):
+    def __init__(self, emit, settings_getter, notify=None, chat=None):
         self.emit = emit
+        self._chat = chat or (lambda op: None)
+        self.chat_errors = 0
         self.get_settings = settings_getter
         self.notify = notify or (lambda text: None)
         self._stop = threading.Event()
@@ -45,6 +48,16 @@ class Source:
     @property
     def running(self):
         return bool(self._thread and self._thread.is_alive() and not self._stop.is_set())
+
+    def forward_chat(self, convert, raw):
+        """Teruskan satu pesan ke overlay chat. Format chat yang tidak dikenal tidak boleh
+        menghentikan sumber: penghitungan member/gift jauh lebih penting daripada tampilan chat."""
+        try:
+            op = convert(raw)
+            if op:
+                self._chat(op)
+        except Exception:
+            self.chat_errors += 1
 
     def sleep(self, seconds) -> bool:
         """Tunggu, tapi bangun segera saat stop(). True jika diminta berhenti."""

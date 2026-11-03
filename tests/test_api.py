@@ -71,6 +71,7 @@ def test_pages_served(tmp_path):
             "/overlay/goals",
             "/overlay/alerts",
             "/overlay/ticker",
+            "/overlay/chat",
             "/static/common.js",
             "/static/fonts/Poppins-ExtraBold.ttf",
             "/static/brand/logo-mark.svg",

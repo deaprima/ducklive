@@ -4,6 +4,7 @@ import re
 
 from .api import video_id_from
 from .base import FatalSourceError, Source
+from .chat import make_item, pick_image
 
 VIDEO_ID = re.compile(r"[A-Za-z0-9_-]{11}")
 # Angka yang berdiri sendiri (bukan bagian dari nama seperti "Gamer2"), boleh dengan pemisah ribuan "1.000".
@@ -39,6 +40,59 @@ def parse_message(msg: dict):
     return None
 
 
+CHAT_KINDS = {
+    "text_message": "text",
+    "paid_message": "superchat",
+    "paid_sticker": "superchat",
+    "membership_item": "member",
+    "sponsorships_gift_purchase_announcement": "gift",
+}
+
+
+def author_role(author: dict) -> str:
+    badges = author.get("badges") or []
+    icons = {b.get("icon_name") for b in badges}
+    if "owner" in icons:
+        return "owner"
+    if "moderator" in icons:
+        return "moderator"
+    if any(b.get("icons") for b in badges):  # lencana member berupa gambar kustom channel
+        return "member"
+    return "verified" if "verified" in icons else ""
+
+
+def chat_op(msg: dict):
+    """Pesan chat -> operasi untuk overlay chat (lihat sources/chat.py), atau None."""
+    mtype = msg.get("message_type")
+    if mtype == "deleted":
+        return {"op": "delete", "id": msg["target_id"]}
+    if mtype == "author_deleted":
+        return {"op": "ban", "channel": msg["channel_id"]}
+    kind = CHAT_KINDS.get(mtype)
+    if not kind or not msg.get("message_id"):
+        return None
+    author = msg.get("author") or {}
+    parts = msg.get("parts") or []
+    if kind == "gift":
+        parts = [{"t": f"Gift {gift_count(msg)} membership"}]
+    elif kind == "member" and not parts:
+        parts = [{"t": msg.get("header_secondary_text") or "Member baru"}]
+    amount = (msg.get("money") or {}).get("text") if kind == "superchat" else None
+    badge = next((pick_image(b["icons"], 32) for b in author.get("badges") or [] if b.get("icons")), "")
+    item = make_item(
+        msg["message_id"],
+        kind,
+        author.get("name"),
+        author.get("id"),
+        author_role(author),
+        parts,
+        amount,
+        avatar=pick_image(author.get("images")),
+        badge=badge,
+    )
+    return {"op": "add", "item": item}
+
+
 class ScrapeSource(Source):
     name = "scrape"
 
@@ -58,6 +112,7 @@ class ScrapeSource(Source):
         for msg in reader.messages(self._stop):
             if self._stop.is_set():
                 break
+            self.forward_chat(chat_op, msg)
             parsed = parse_message(msg)
             if not parsed:
                 continue

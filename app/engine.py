@@ -34,6 +34,11 @@ DEFAULTS = {
     "text_shadow": True,
     "align": "center",
     "overlay_styles": {},  # gaya khusus per overlay: {"goals": {"theme": "transparent"}}
+    # Overlay live chat
+    "chat_max_items": 8.0,
+    "chat_hide_links": True,
+    "chat_show_owner": False,  # chat biasa dari pemilik channel (host) sendiri
+    "chat_show_avatars": True,
     # Sumber event
     "source": "manual",
     "video_url": "",
@@ -56,6 +61,7 @@ FLOAT_KEYS = {
     "overlay_scale",
     "card_opacity",
     "corner_radius",
+    "chat_max_items",
 }
 # Batas atas agar angka salah ketik (mis. 1e308) tidak merusak timer atau JSON.
 FLOAT_MAX = {
@@ -65,10 +71,20 @@ FLOAT_MAX = {
     "overlay_scale": 200.0,
     "card_opacity": 100.0,
     "corner_radius": 40.0,
+    "chat_max_items": 15.0,
 }
-FLOAT_MIN = {"api_poll_seconds": 5.0, "overlay_scale": 50.0}
+FLOAT_MIN = {"api_poll_seconds": 5.0, "overlay_scale": 50.0, "chat_max_items": 1.0}
 INT_KEYS = {"obs_port"}
-BOOL_KEYS = {"sound", "obs_enabled", "mascot", "card_border", "text_shadow"}
+BOOL_KEYS = {
+    "sound",
+    "obs_enabled",
+    "mascot",
+    "card_border",
+    "text_shadow",
+    "chat_hide_links",
+    "chat_show_owner",
+    "chat_show_avatars",
+}
 STR_KEYS = {
     "goals_title",
     "unit_label",
@@ -94,13 +110,14 @@ LABELS = {
     "superchat_minutes_per_step": "Super Chat: menit",
     "api_poll_seconds": "Interval API",
     "obs_port": "OBS port",
+    "chat_max_items": "Jumlah pesan chat",
 }
 CHOICES = {
     "theme": {"dark", "light", "neon", "transparent"},
     "source": {"manual", "scrape", "api"},
     "align": {"left", "center", "right"},
 }
-OVERLAYS = ("timer", "milestone", "goals", "alerts", "ticker")
+OVERLAYS = ("timer", "milestone", "goals", "alerts", "ticker", "chat")
 # Pengaturan yang boleh berbeda per overlay (lihat overlay_styles).
 STYLE_KEYS = {
     "theme",

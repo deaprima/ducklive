@@ -1240,6 +1240,9 @@
               <button type="button" id="pvMember">Coba alert member</button>
               <button type="button" id="pvGoal">Coba alert goal</button>
             </div>
+            <div class="row" id="pvChatBtns" hidden>
+              <button type="button" id="pvChat">Tambah contoh chat</button>
+            </div>
             <p class="hint">
               Preview memakai data timer dan goal yang sedang berjalan. Alert contoh hanya tampil di sini, tidak
               tercatat dan tidak muncul di OBS.
@@ -1282,6 +1285,7 @@
           <button data-t="gift5">Gift x5</button>
           <button data-t="gift50">Gift x50</button>
           <button data-t="sc">Super Chat Rp25.000</button>
+          <button id="bTestChat" title="Muncul di overlay Live chat, tidak dihitung">Contoh pesan chat</button>
         </div>
 
         <div class="subpanel">
@@ -1598,6 +1602,13 @@
         ["goals", "Daftar goal", "Semua goal dengan tanda centang.", 600, 700],
         ["alerts", "Alert", "Notifikasi member baru, gift, dan goal tercapai, dengan suara.", 800, 250],
         ["ticker", "Ticker", "Teks berjalan: member terbaru dan top gifter.", 1920, 80],
+        [
+          "chat",
+          "Live chat",
+          "Chat penonton dengan highlight Super Chat dan member. Paling cocok dengan sumber Scrape.",
+          450,
+          600,
+        ],
       ];
       OVERLAYS.forEach(([path, name, desc, w, h]) => {
         const url = `${location.origin}/overlay/${path}`;
@@ -1723,6 +1734,34 @@
             ["sound", "Bunyikan suara saat alert", "checkbox", "", ""],
           ],
         ],
+        [
+          "Live chat",
+          "Dengan sumber API, chat muncul per interval API (tidak real-time). Paling cocok dengan sumber Scrape.",
+          [
+            [
+              "chat_max_items",
+              "Jumlah chat di layar",
+              "range",
+              [1, 15, " chat"],
+              "Maksimal chat yang tampil bersamaan. Saat penuh, chat paling lama hilang.",
+            ],
+            [
+              "chat_hide_links",
+              "Sembunyikan link",
+              "checkbox",
+              "",
+              'Link diganti "[link]" agar tidak tampil di siaran.',
+            ],
+            ["chat_show_avatars", "Tampilkan foto profil", "checkbox", "", ""],
+            [
+              "chat_show_owner",
+              "Tampilkan chat host (akun channel sendiri)",
+              "checkbox",
+              "",
+              "Chat moderator, member, dan penonton selalu tampil.",
+            ],
+          ],
+        ],
       ];
 
       function buildField([k, label, type, extra, help]) {
@@ -1807,6 +1846,25 @@
       const RULE_FIELDS = fieldsOf([...RULES, OBS_GROUP]);
       const STYLE_FIELDS = fieldsOf(STYLE);
       const PER_FIELDS = fieldsOf(STYLE.slice(0, 2)); // "Warna dan bentuk" + "Teks dan tata letak" boleh beda per overlay
+      // Isi (teks, maskot, suara, live chat) berlaku untuk overlay tertentu saja: tampil hanya saat overlay itu dipilih.
+      const CONTENT_FIELDS = fieldsOf(STYLE.slice(2));
+      const CONTENT_FOR = {
+        unit_label: ["milestone", "goals"],
+        goals_title: ["goals"],
+        rule_text: ["goals"],
+        mascot: ["timer", "alerts"],
+        sound: ["alerts"],
+        chat_max_items: ["chat"],
+        chat_hide_links: ["chat"],
+        chat_show_avatars: ["chat"],
+        chat_show_owner: ["chat"],
+      };
+      const contentNote = Sub.el(
+        "p",
+        "hint",
+        "Teks, maskot, suara, dan pengaturan Live chat diatur per overlay: pilih overlay-nya di atas.",
+      );
+      $("styleForm").append(contentNote);
       const readField = ([k, , type]) => {
         const e = $("s_" + k);
         return type === "checkbox" ? e.checked : type === "range" ? +e.value : e.value;
@@ -1881,20 +1939,25 @@
         $("dirtyStyle").hidden = true;
       }
       function formToModel() {
-        if (target === "all") model.global = collect(STYLE_FIELDS);
+        if (target === "all") Object.assign(model.global, collect(PER_FIELDS));
         else if (model.per[target]) model.per[target] = collect(PER_FIELDS);
+        Object.assign(model.global, collect(CONTENT_FIELDS)); // isi selalu berlaku umum, apa pun overlay yang dipilih
       }
       function modelToForm() {
         const all = target === "all",
           own = model.per[target];
-        if (all) STYLE_FIELDS.forEach((f) => writeField(f, model.global[f[0]]));
-        else PER_FIELDS.forEach((f) => writeField(f, (own || model.global)[f[0]]));
+        PER_FIELDS.forEach((f) => writeField(f, (all ? model.global : own || model.global)[f[0]]));
+        CONTENT_FIELDS.forEach((f) => {
+          writeField(f, model.global[f[0]]);
+          $("s_" + f[0]).closest(".field").hidden = all || !(CONTENT_FOR[f[0]] || []).includes(target);
+        });
         const locked = !all && !own;
         STYLE_GROUPS.slice(0, 2).forEach((g) => {
           g.inert = locked;
           g.classList.toggle("locked", locked);
         });
-        STYLE_GROUPS[2].hidden = !all; // isi (nama satuan, maskot, suara) selalu berlaku untuk semua overlay
+        STYLE_GROUPS.slice(2).forEach((g) => (g.hidden = ![...g.querySelectorAll(".field")].some((f) => !f.hidden)));
+        contentNote.hidden = !all;
         $("customRow").hidden = all;
         $("customOn").checked = !!own;
         if (!all) $("customLbl").textContent = `Gaya khusus untuk ${TARGETS.find((t) => t[0] === target)[1]}`;
@@ -1974,7 +2037,7 @@
       }
       function fitPreview() {
         const [, name, , w, h] = OVERLAYS.find((x) => x[0] === pvName);
-        const need = pvName === "alerts" ? 0 : contentHeight(); // tinggi alert berubah-ubah saat animasi
+        const need = pvName === "alerts" || pvName === "chat" ? 0 : contentHeight(); // tingginya berubah-ubah
         const tall = Math.max(h, need);
         const avail = $("pvStage").parentElement.clientWidth - 4;
         const s = Math.min(avail / w, 460 / tall);
@@ -1997,6 +2060,7 @@
       function loadPreview(force) {
         markPressed("#pvPick [data-pv]", "pv", pvName);
         $("pvAlertBtns").hidden = pvName !== "alerts";
+        $("pvChatBtns").hidden = pvName !== "chat";
         const url = `/overlay/${pvName}`;
         if (force || !$("pvFrame").src.endsWith(url)) $("pvFrame").src = url;
         fitPreview();
@@ -2011,9 +2075,30 @@
         units: 1,
         seconds_added: (+$("s_minutes_per_member").value || 3) * 60,
       });
+      // contoh chat untuk preview: hanya tampil di sini, tidak dikirim ke OBS
+      const SAMPLE_CHAT = [
+        ["text", "Penonton", "", "Halo semua, semangat subathon-nya!"],
+        ["text", "Penonton Setia", "member", "Sudah nonton dari jam pertama nih."],
+        ["text", "Moderator", "moderator", "Jangan lupa baca aturan di deskripsi ya."],
+        ["superchat", "Pendukung", "member", "Gas terus sampai goal!", "Rp50.000"],
+        ["member", "Member Baru", "member", "Member baru"],
+        ["text", "Penonton Lain", "", "Kapan main game berikutnya?"],
+      ];
+      let sampleIdx = 0;
+      function sendSampleChat() {
+        const [kind, author, role, t, amount] = SAMPLE_CHAT[sampleIdx++ % SAMPLE_CHAT.length];
+        const item = { id: "pv-" + sampleIdx, kind, author, role, channel: "", parts: [{ t }], amount: amount || "" };
+        $("pvFrame").contentWindow.postMessage({ type: "preview-chat", item }, location.origin);
+      }
+      $("pvChat").onclick = sendSampleChat;
+      $("bTestChat").onclick = async () => {
+        await api("POST", "/api/chat/test");
+        toast("Contoh pesan dikirim ke overlay Live chat");
+      };
       $("pvFrame").addEventListener("load", () => {
         sendPreview();
         setTimeout(fitPreview, 300);
+        if (pvName === "chat") SAMPLE_CHAT.forEach((_, i) => setTimeout(sendSampleChat, 400 + i * 150));
         if (pvName === "alerts")
           setTimeout(
             () =>

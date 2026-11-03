@@ -10,6 +10,7 @@ import socket
 import sys
 import threading
 import webbrowser
+from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
 from urllib.parse import urlsplit
 
@@ -23,12 +24,15 @@ from .db import DB
 from .engine import OVERLAYS, Engine
 from .paths import data_dir, db_path, resource_dir
 from .sources.api import ApiSource, client_secret_path, login_interactive, token_path
+from .sources.chat import make_item
 from .sources.scrape import ScrapeSource
 
 WEB = resource_dir() / "web"
 APP_ID = "ducklive"
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "[::1]"}
 MIN_TOKEN_LEN = 16
+CHAT_KEEP = 50  # pesan chat terakhir yang dikirim ke overlay chat yang baru tersambung
+CHAT_SEEN = 2000  # ID pesan yang diingat agar chat lama tidak tampil ulang saat menyambung ulang
 
 
 def host_only(netloc: str) -> str:
@@ -120,9 +124,42 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
     def emit(ext_id, kind, author, units=1, amount=None, currency=None):
         engine.handle_event(ext_id, kind, author, units, amount, currency)
 
+    # Live chat hanya disimpan di memori (tidak ke database) untuk overlay chat.
+    chat_log: deque = deque(maxlen=CHAT_KEEP)
+    chat_seen: OrderedDict = OrderedDict()
+    chat_lock = threading.Lock()
+
+    def chat(op):
+        with chat_lock:
+            if op["op"] == "add":
+                item = op["item"]
+                if item["id"] in chat_seen:
+                    return
+                chat_seen[item["id"]] = True
+                if len(chat_seen) > CHAT_SEEN:
+                    chat_seen.popitem(last=False)
+                chat_log.append(item)
+                message = {"type": "chat", "item": item}
+            elif op["op"] == "delete":
+                kept = [x for x in chat_log if x["id"] != op["id"]]
+                message = {"type": "chat_delete", "id": op["id"]}
+            elif op["op"] == "ban":
+                kept = [x for x in chat_log if x["channel"] != op["channel"]]
+                message = {"type": "chat_delete", "channel": op["channel"]}
+            else:
+                return
+            if op["op"] != "add":
+                chat_log.clear()
+                chat_log.extend(kept)
+        hub.push(message)
+
+    def chat_history():
+        with chat_lock:
+            return list(chat_log)
+
     def make_source():
         cls = {"scrape": ScrapeSource, "api": ApiSource}.get(engine.settings["source"])
-        return cls(emit, lambda: engine.settings, notify=toast) if cls else None
+        return cls(emit, lambda: engine.settings, notify=toast, chat=chat) if cls else None
 
     @asynccontextmanager
     async def lifespan(app):
@@ -147,6 +184,7 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.shutdown = None
+    app.state.chat = chat  # untuk test
 
     def host_allowed(host_header: str) -> bool:
         return lan or host_only(host_header) in LOCAL_HOSTS
@@ -217,6 +255,7 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
         hub.clients.add(websocket)
         try:
             await websocket.send_text(json.dumps({"type": "state", "state": engine.snapshot()}))
+            await websocket.send_text(json.dumps({"type": "chat_history", "items": chat_history()}))
             while True:
                 await websocket.receive_text()
         except WebSocketDisconnect:
@@ -305,6 +344,18 @@ def create_app(db_file=None, admin_token=None, lan=False) -> FastAPI:
         if ev is None:
             raise HTTPException(400, "event tidak valid")
         return ev
+
+    @app.post("/api/chat/test", dependencies=admin_only)
+    def test_chat():
+        """Pesan contoh untuk mengecek overlay chat di OBS tanpa live."""
+        text = "Halo! Ini contoh pesan dari DuckLive untuk mengecek overlay chat."
+        chat(
+            {
+                "op": "add",
+                "item": make_item(f"test-{secrets.token_hex(6)}", "text", "DuckLive", "", "", [{"t": text}]),
+            }
+        )
+        return {"ok": True}
 
     @app.post("/api/events/{event_id}/undo", dependencies=admin_only)
     def undo(event_id: int):

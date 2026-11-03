@@ -24,14 +24,52 @@ CHAT_PAGE = HOME + "/live_chat?is_popout=1&v={}"
 POLL_URL = HOME + "/youtubei/v1/live_chat/get_live_chat"
 
 
+# Moderator menghapus satu pesan / semua pesan seorang penonton (ban atau timeout).
+DELETE_ACTIONS = ("markChatItemAsDeletedAction", "removeChatItemAction")
+AUTHOR_DELETE_ACTIONS = ("markChatItemsByAuthorAsDeletedAction", "removeChatItemByAuthorAction")
+
+
+def runs_to_parts(text_obj) -> list[dict]:
+    """Isi pesan YouTube (runs) -> [{"t": teks} | {"img": url, "alt": ":emoji:"}].
+    Emoji standar berupa karakter Unicode; hanya emoji kustom channel yang berupa gambar."""
+    if not isinstance(text_obj, dict):
+        return []
+    if "simpleText" in text_obj:
+        return [{"t": str(text_obj["simpleText"])}]
+    parts = []
+    for run in text_obj.get("runs") or []:
+        if "text" in run:
+            parts.append({"t": str(run["text"])})
+        elif "emoji" in run:
+            e = run["emoji"]
+            alt = multi_get(e, "shortcuts", 0) or e.get("emojiId") or ""
+            if e.get("isCustomEmoji"):
+                thumbs = multi_get(e, "image", "thumbnails") or []
+                url = thumbs[-1].get("url", "") if thumbs else ""
+                parts.append({"img": url, "alt": alt} if url else {"t": alt})
+            else:
+                parts.append({"t": e.get("emojiId") or alt})
+    return parts
+
+
 def to_message(action: dict):
-    """Satu action 'addChatItemAction' -> dict pesan gaya chat-downloader, atau None."""
+    """Satu action chat -> dict pesan gaya chat-downloader, atau None.
+    Penghapusan oleh moderator menjadi message_type "deleted" / "author_deleted"."""
+    for key in DELETE_ACTIONS:
+        if key in action:
+            target = (action[key] or {}).get("targetItemId")
+            return {"message_type": "deleted", "target_id": target} if target else None
+    for key in AUTHOR_DELETE_ACTIONS:
+        if key in action:
+            channel = (action[key] or {}).get("externalChannelId")
+            return {"message_type": "author_deleted", "channel_id": channel} if channel else None
     item = multi_get(action, "addChatItemAction", "item")
     if not item:
         return None
     renderer = next(iter(item))
     data = YouTubeChatDownloader._parse_item(item, {}, 0)
     data["message_type"] = camel_case_split(remove_suffixes(remove_prefixes(renderer, "liveChat"), "Renderer"))
+    data["parts"] = runs_to_parts((item.get(renderer) or {}).get("message"))
     return data
 
 

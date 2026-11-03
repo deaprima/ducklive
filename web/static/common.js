@@ -1,6 +1,6 @@
 // Klien WebSocket bersama untuk semua overlay. Semua teks dari chat ditulis lewat textContent (anti-XSS).
 (function () {
-  const listeners = { state: [], event: [], goal: [], toast: [] };
+  const listeners = { state: [], event: [], goal: [], toast: [], chat: [], chat_delete: [], chat_history: [] };
   let state = null;
   let recvAt = 0;
   let preview = null; // pengaturan sementara dari halaman Admin (preview sebelum disimpan)
@@ -50,7 +50,7 @@
         publish(m.state);
       } else if (m.type === "event") listeners.event.forEach((f) => f(m));
       else if (m.type === "goal") listeners.goal.forEach((f) => f(m));
-      else if (m.type === "toast") listeners.toast.forEach((f) => f(m));
+      else if (Object.hasOwn(listeners, m.type)) listeners[m.type].forEach((f) => f(m));
     };
     ws.onclose = () => setTimeout(connect, 1500);
     ws.onerror = () => ws.close();
@@ -66,6 +66,7 @@
       if (state) publish(state);
     } else if (m.type === "preview-event") listeners.event.forEach((f) => f({ type: "event", ...m.event }));
     else if (m.type === "preview-goal") listeners.goal.forEach((f) => f({ type: "goal", ...m.goal }));
+    else if (m.type === "preview-chat") listeners.chat.forEach((f) => f({ type: "chat", item: m.item }));
   });
 
   // Ekspresi maskot dari brand board: normal, happy (member baru), sleepy (jeda), celebrate (goal).

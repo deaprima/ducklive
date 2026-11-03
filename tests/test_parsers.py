@@ -89,7 +89,8 @@ def test_ytchat_actions_to_messages():
         {"addChatItemAction": {"item": {"giftMessageViewModel": {"id": "j1", "text": {"content": "sent Star"}}}}}
     )
     assert parse_message(jewel) is None
-    assert to_message({"removeChatItemAction": {"targetItemId": "x"}}) is None
+    # penghapusan oleh moderator diteruskan ke overlay chat, tetapi tidak pernah dihitung sebagai event
+    assert parse_message(to_message({"removeChatItemAction": {"targetItemId": "x"}})) is None
 
     assert next_continuation(
         {"continuations": [{"invalidationContinuationData": {"continuation": "T", "timeoutMs": 10000}}]}

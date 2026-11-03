@@ -9,6 +9,7 @@ import httpx
 
 from ..paths import data_dir
 from .base import FatalSourceError, Source
+from .chat import make_item
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 API = "https://www.googleapis.com/youtube/v3"
@@ -80,6 +81,67 @@ def parse_item(item: dict):
             return None
         return "superchat", 0, int(micros) / 1_000_000, d.get("currency")
     return None
+
+
+API_CHAT_KINDS = {
+    "textMessageEvent": ("text", None),
+    "superChatEvent": ("superchat", "superChatDetails"),
+    "superStickerEvent": ("superchat", "superStickerDetails"),
+    "newSponsorEvent": ("member", None),
+    "memberMilestoneChatEvent": ("member", "memberMilestoneChatDetails"),
+    "membershipGiftingEvent": ("gift", None),
+}
+
+
+def api_chat_op(item: dict):
+    """Item liveChatMessages -> operasi untuk overlay chat (lihat sources/chat.py), atau None."""
+    sn = item.get("snippet") or {}
+    t = sn.get("type")
+    if t == "messageDeletedEvent":
+        target = (sn.get("messageDeletedDetails") or {}).get("deletedMessageId")
+        return {"op": "delete", "id": target} if target else None
+    if t == "userBannedEvent":
+        channel = ((sn.get("userBannedDetails") or {}).get("bannedUserDetails") or {}).get("channelId")
+        return {"op": "ban", "channel": channel} if channel else None
+    if t not in API_CHAT_KINDS or not item.get("id"):
+        return None
+    kind, details_key = API_CHAT_KINDS[t]
+    details = (sn.get(details_key) or {}) if details_key else {}
+    ad = item.get("authorDetails") or {}
+    if kind == "text":
+        text = sn.get("displayMessage") or ""
+    elif kind == "gift":
+        n = (sn.get("membershipGiftingDetails") or {}).get("giftMembershipsCount", 1)
+        text = f"Gift {n} membership"
+    else:
+        # displayMessage Super Chat berisi kalimat buatan YouTube; komentar penonton ada di userComment
+        text = details.get("userComment") or ("Member baru" if kind == "member" else "")
+    role = (
+        "owner"
+        if ad.get("isChatOwner")
+        else "moderator"
+        if ad.get("isChatModerator")
+        else "member"
+        if ad.get("isChatSponsor")
+        else "verified"
+        if ad.get("isVerified")
+        else ""
+    )
+    parts = [{"t": text}] if text else []
+    amount = details.get("amountDisplayString") if kind == "superchat" else None
+    return {
+        "op": "add",
+        "item": make_item(
+            item["id"],
+            kind,
+            ad.get("displayName"),
+            ad.get("channelId"),
+            role,
+            parts,
+            amount,
+            avatar=ad.get("profileImageUrl") or "",
+        ),
+    }
 
 
 MAX_RESULTS = 200
@@ -158,6 +220,7 @@ class ApiSource(Source):
                 page = data.get("nextPageToken")
                 items = data.get("items", [])
                 for item in items:
+                    self.forward_chat(api_chat_op, item)
                     parsed = parse_item(item)
                     if not parsed:
                         continue

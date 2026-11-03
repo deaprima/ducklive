@@ -12,7 +12,7 @@ Setiap member baru, gift membership, dan (opsional) Super Chat menambah waktu ti
 
 ## Fitur
 
-- **5 overlay OBS**: timer, milestone (goal berikutnya + progress bar), daftar goal, alert (dengan suara), dan ticker member terbaru / top gifter.
+- **6 overlay OBS**: timer, milestone (goal berikutnya + progress bar), daftar goal, alert (dengan suara), ticker member terbaru / top gifter, dan live chat (Super Chat dan member disorot, pesan yang dihapus moderator ikut hilang).
 - **Membaca live chat otomatis**: tanpa API key (tempel URL live), atau lewat YouTube Data API resmi. Menyambung ulang sendiri jika internet putus.
 - **Goal** dengan bonus waktu, centang otomatis, dan **ganti scene OBS** otomatis saat goal tercapai.
 - **Tampilan overlay** bisa diatur dengan preview langsung: tema, warna, kepekatan, sudut, font, ukuran, perataan. Bisa sama untuk semua overlay atau berbeda per overlay.
@@ -43,6 +43,7 @@ Di OBS: **Sources**, klik **+**, pilih **Browser**, tempel URL. Latar overlay ot
 | `http://127.0.0.1:8765/overlay/goals` | Daftar semua goal | 600 x 700 |
 | `http://127.0.0.1:8765/overlay/alerts` | Notifikasi member, gift, goal (dengan suara) | 800 x 250 |
 | `http://127.0.0.1:8765/overlay/ticker` | Member terbaru dan top gifter | 1920 x 80 |
+| `http://127.0.0.1:8765/overlay/chat` | Live chat penonton (paling cocok dengan sumber tanpa API key) | 450 x 600 |
 
 ### Jika ada masalah
 
